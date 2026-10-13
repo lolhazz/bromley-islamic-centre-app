@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct TodayView: View {
+    @State private var showAlerts = false
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { ctx in
             content(now: ctx.date)
@@ -18,7 +19,8 @@ struct TodayView: View {
                 VStack(alignment: .leading, spacing: 24) {
                     header(now: now)
                     nextCard(state: state)
-                    prayerGrid(entries: today.entries, highlight: current)
+                    venueBanner
+                    prayerGrid(entries: today.entries, highlight: current.adhan < tomorrow.date ? current : nil)
                     sunriseRow(today.sunrise)
                     jumuah
                     openingHours
@@ -43,7 +45,19 @@ struct TodayView: View {
                     .foregroundStyle(.white)
             }
             Spacer()
+            Button { showAlerts = true } label: {
+                Image(systemName: "bell.badge").font(.title3).foregroundStyle(Theme.gold)
+                    .frame(width: 44, height: 44)
+            }
+            .accessibilityLabel("Prayer alerts")
         }
+        .sheet(isPresented: $showAlerts) { AlertsView() }
+    }
+
+    private var venueBanner: some View {
+        Label { Text(Content.venueBanner).font(.body(13)).foregroundStyle(.white.opacity(0.85)) }
+            icon: { Image(systemName: "mappin.and.ellipse").foregroundStyle(Theme.gold) }
+            .card(radius: 16, stroke: Theme.gold.opacity(0.3))
     }
 
     private func nextCard(state: NextPrayer) -> some View {
@@ -70,10 +84,10 @@ struct TodayView: View {
         .accessibilityElement(children: .combine)
     }
 
-    private func prayerGrid(entries: [PrayerEntry], highlight: PrayerEntry) -> some View {
+    private func prayerGrid(entries: [PrayerEntry], highlight: PrayerEntry?) -> some View {
         VStack(spacing: 0) {
             ForEach(entries) { e in
-                let active = e.prayer == highlight.prayer
+                let active = e.prayer == highlight?.prayer
                 HStack {
                     Text(e.prayer.rawValue.uppercased())
                         .font(.body(13, weight: .bold)).tracking(1.4)
@@ -112,8 +126,9 @@ struct TodayView: View {
     }
 
     private var jumuah: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Eyebrow(text: "Friday · Jumu’ah")
+        let isFriday = Calendar.current.component(.weekday, from: .now) == 6
+        return VStack(alignment: .leading, spacing: 12) {
+            Eyebrow(text: isFriday ? "Today · Jumu’ah" : "Friday · Jumu’ah")
             HStack(spacing: 12) {
                 jumuahCard("1st Jumu’ah", khutbah: "1:15 pm", jamaah: "1:30 pm")
                 jumuahCard("2nd Jumu’ah", khutbah: "2:00 pm", jamaah: "2:15 pm")
