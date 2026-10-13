@@ -3,12 +3,16 @@ import SwiftUI
 @main
 struct BromleyApp: App {
     @StateObject private var alerts = AlertSettings()
+    @StateObject private var config = ConfigStore()
+    @Environment(\.scenePhase) private var phase
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environmentObject(alerts)
+                .environmentObject(config)
                 .tint(Theme.gold)
-                .task { alerts.reschedule() }
+                .task { alerts.reschedule(); await config.refresh() }
+                .onChange(of: phase) { _, new in if new == .active { Task { await config.refresh() } } }
         }
     }
 }

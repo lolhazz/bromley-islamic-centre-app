@@ -1,13 +1,14 @@
 import SwiftUI
 
 struct EventsView: View {
+    @EnvironmentObject private var config: ConfigStore
     var body: some View {
         NavigationStack {
             Screen {
                 PageTitle(eyebrow: "Community & events", title: "What’s on",
                           subtitle: "Gather, learn and grow together.")
                 section("Announcements")
-                ForEach(Content.announcements) { a in
+                ForEach(config.announcements) { a in
                     VStack(alignment: .leading, spacing: 6) {
                         Text(a.date.uppercased()).font(.body(11, weight: .bold)).tracking(1.2).foregroundStyle(Theme.gold)
                         Text(a.title).font(.display(21, weight: .medium)).foregroundStyle(.white)
@@ -16,7 +17,7 @@ struct EventsView: View {
                     .card(stroke: Theme.gold.opacity(0.3))
                 }
                 section("Coming up")
-                ForEach(Content.events) { e in
+                ForEach(config.events) { e in
                     VStack(alignment: .leading, spacing: 6) {
                         Text(e.tag.uppercased()).font(.body(11, weight: .bold)).tracking(1.2).foregroundStyle(Theme.gold)
                         Text(e.title).font(.display(21, weight: .medium)).foregroundStyle(.white)
