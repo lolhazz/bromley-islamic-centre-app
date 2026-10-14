@@ -21,6 +21,7 @@ struct TodayView: View {
                     header(now: now)
                     nextCard(state: state)
                     venueBanner
+                    ramadanCard(today: today, now: now)
                     prayerGrid(entries: today.entries, highlight: current.adhan < tomorrow.date ? current : nil)
                     sunriseRow(today.sunrise)
                     jumuah
@@ -44,6 +45,8 @@ struct TodayView: View {
                 Text(now.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: "en_GB"))))
                     .font(.display(22, weight: .medium))
                     .foregroundStyle(.white)
+                Text(Ramadan.hijriString(for: now))
+                    .font(.body(12)).foregroundStyle(.white.opacity(0.65))
             }
             Spacer()
             Button { showAlerts = true } label: {
@@ -53,6 +56,44 @@ struct TodayView: View {
             .accessibilityLabel("Prayer alerts")
         }
         .sheet(isPresented: $showAlerts) { AlertsView() }
+    }
+
+    @ViewBuilder
+    private func ramadanCard(today: DaySchedule, now: Date) -> some View {
+        let state = Ramadan.state(now: now, override: config.ramadanStart)
+        if case .none = state { EmptyView() } else {
+            let fajr = today.entries[0].adhan, maghrib = today.entries[3].adhan
+            let imsak = fajr.addingTimeInterval(-Double(Ramadan.imsakMinutesBeforeFajr) * 60)
+            VStack(alignment: .leading, spacing: 12) {
+                switch state {
+                case let .before(d):
+                    Eyebrow(text: "Ramadan is coming")
+                    Text("About \(d) day\(d == 1 ? "" : "s") to go")
+                        .font(.display(26, weight: .semibold)).foregroundStyle(.white)
+                case let .during(day):
+                    Eyebrow(text: "Ramadan · day \(day)")
+                    HStack {
+                        ramadanTime("Imsak", imsak)
+                        ramadanTime("Suhoor ends · Fajr", fajr)
+                        ramadanTime("Iftar · Maghrib", maghrib)
+                    }
+                case .none: EmptyView()
+                }
+                Text(config.ramadanNote ?? "Taraweeh and community iftar venues and timings are announced before the month begins.")
+                    .font(.body(13)).foregroundStyle(.white.opacity(0.75))
+                Text("Start of Ramadan follows the moon and may differ by a day.")
+                    .font(.body(11)).foregroundStyle(.white.opacity(0.5))
+            }
+            .card(stroke: Theme.gold.opacity(0.45))
+        }
+    }
+
+    private func ramadanTime(_ label: String, _ date: Date) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(label.uppercased()).font(.body(9, weight: .bold)).tracking(0.8).foregroundStyle(Theme.gold)
+            Text(TimeFormat.clock(date)).font(.body(17, weight: .bold)).foregroundStyle(.white).monospacedDigit()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var venueBanner: some View {

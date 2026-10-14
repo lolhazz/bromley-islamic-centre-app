@@ -5,14 +5,22 @@ struct BromleyApp: App {
     @StateObject private var alerts = AlertSettings()
     @StateObject private var config = ConfigStore()
     @Environment(\.scenePhase) private var phase
+    private func sync() async {
+        alerts.ramadanOverride = config.ramadanStart
+        alerts.reschedule()
+        await config.refresh()
+        alerts.ramadanOverride = config.ramadanStart
+        alerts.reschedule()
+    }
+
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environmentObject(alerts)
                 .environmentObject(config)
                 .tint(Theme.gold)
-                .task { alerts.reschedule(); await config.refresh() }
-                .onChange(of: phase) { _, new in if new == .active { Task { await config.refresh() } } }
+                .task { await sync() }
+                .onChange(of: phase) { _, new in if new == .active { Task { await sync() } } }
         }
     }
 }

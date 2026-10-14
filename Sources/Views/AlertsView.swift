@@ -23,6 +23,10 @@ struct AlertsView: View {
                     get: { alerts.iqamahReminder },
                     set: { v in Task { await alerts.setIqamah(v) } }))
                     .font(.body(15, weight: .medium)).card()
+                Toggle("Ramadan: imsak and iftar alerts", isOn: Binding(
+                    get: { alerts.ramadanAlerts },
+                    set: { v in Task { await alerts.setRamadan(v) } }))
+                    .font(.body(15, weight: .medium)).card()
                 if alerts.permissionDenied {
                     Text("Notifications are turned off for this app. Enable them in Settings to receive alerts.")
                         .font(.body(14)).foregroundStyle(Theme.gold)
