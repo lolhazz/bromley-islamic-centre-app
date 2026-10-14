@@ -16,19 +16,28 @@ enum Site {
     static func page(_ path: String) -> String { base + path }
 }
 
-struct Announcement: Identifiable {
-    let id = UUID()
+struct Announcement: Identifiable, Codable {
+    var id: String { date + title }
     let title: String
     let body: String
     let date: String
 }
 
-struct EventItem: Identifiable {
-    let id = UUID()
+struct EventItem: Identifiable, Codable {
+    var id: String { tag + title }
     let tag: String
     let title: String
     let detail: String
     let when: String?
+    let note: String?
+}
+
+struct JumuahSlot: Identifiable, Codable {
+    var id: String { label }
+    let label: String
+    let khutbah: String
+    let jamaah: String
+    let venue: String?
     let note: String?
 }
 
@@ -57,6 +66,11 @@ struct PolicyItem: Identifiable {
 /// Static content mirrored from bromleyislamiccentre.org.uk (checked 9 Oct 2026).
 /// Replace `announcements`/`events` with a live feed once the committee has an admin source.
 enum Content {
+    static let jumuah: [JumuahSlot] = [
+        JumuahSlot(label: "1st Jumu’ah", khutbah: "1:15 pm", jamaah: "1:30 pm", venue: nil, note: nil),
+        JumuahSlot(label: "2nd Jumu’ah", khutbah: "2:00 pm", jamaah: "2:15 pm", venue: nil, note: nil),
+    ]
+
     static let venueBanner = "We currently meet in temporary community spaces. Confirm the venue before you travel."
 
     static let announcements: [Announcement] = [

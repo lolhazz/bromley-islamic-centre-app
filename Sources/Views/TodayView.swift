@@ -2,6 +2,7 @@ import SwiftUI
 
 struct TodayView: View {
     @State private var showAlerts = false
+    @EnvironmentObject private var config: ConfigStore
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { ctx in
             content(now: ctx.date)
@@ -55,7 +56,7 @@ struct TodayView: View {
     }
 
     private var venueBanner: some View {
-        Label { Text(Content.venueBanner).font(.body(13)).foregroundStyle(.white.opacity(0.85)) }
+        Label { Text(config.venueBanner).font(.body(13)).foregroundStyle(.white.opacity(0.85)) }
             icon: { Image(systemName: "mappin.and.ellipse").foregroundStyle(Theme.gold) }
             .card(radius: 16, stroke: Theme.gold.opacity(0.3))
     }
@@ -130,17 +131,18 @@ struct TodayView: View {
         return VStack(alignment: .leading, spacing: 12) {
             Eyebrow(text: isFriday ? "Today · Jumu’ah" : "Friday · Jumu’ah")
             HStack(spacing: 12) {
-                jumuahCard("1st Jumu’ah", khutbah: "1:15 pm", jamaah: "1:30 pm")
-                jumuahCard("2nd Jumu’ah", khutbah: "2:00 pm", jamaah: "2:15 pm")
+                ForEach(config.jumuah) { jumuahCard($0) }
             }
         }
     }
 
-    private func jumuahCard(_ title: String, khutbah: String, jamaah: String) -> some View {
+    private func jumuahCard(_ slot: JumuahSlot) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title).font(.display(20, weight: .medium)).foregroundStyle(.white)
-            row("Khutbah", khutbah)
-            row("Jama’ah", jamaah)
+            Text(slot.label).font(.display(20, weight: .medium)).foregroundStyle(.white)
+            row("Khutbah", slot.khutbah)
+            row("Jama’ah", slot.jamaah)
+            if let v = slot.venue, !v.isEmpty { Text(v).font(.body(12)).foregroundStyle(.white.opacity(0.7)) }
+            if let n = slot.note, !n.isEmpty { Text(n).font(.body(12)).italic().foregroundStyle(Theme.gold) }
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
