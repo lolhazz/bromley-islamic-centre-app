@@ -7,6 +7,10 @@ struct RemoteConfig: Codable {
     var venueBanner: String?
     var announcements: [Announcement]?
     var events: [EventItem]?
+    /// First day of Ramadan as "yyyy-MM-dd". Overrides the calendar calculation (moon sighting).
+    var ramadanStart: String?
+    /// Taraweeh / iftar details to show on the Ramadan card.
+    var ramadanNote: String?
 }
 
 /// Live content: bundled defaults, overridden by the last good online copy.
@@ -17,6 +21,8 @@ final class ConfigStore: ObservableObject {
     @Published private(set) var venueBanner = Content.venueBanner
     @Published private(set) var announcements = Content.announcements
     @Published private(set) var events = Content.events
+    @Published private(set) var ramadanStart: String?
+    @Published private(set) var ramadanNote: String?
     @Published private(set) var lastUpdated: Date?
 
     /// Set to the hosted JSON address once the committee's editor exists. nil = bundled content only.
@@ -51,5 +57,7 @@ final class ConfigStore: ObservableObject {
         venueBanner = c.venueBanner ?? Content.venueBanner
         announcements = c.announcements ?? Content.announcements
         events = c.events ?? Content.events
+        ramadanStart = c.ramadanStart
+        ramadanNote = c.ramadanNote
     }
 }
