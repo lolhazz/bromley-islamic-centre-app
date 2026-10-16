@@ -23,6 +23,8 @@ targets:
       - path: Resources
         excludes:
           - Info.plist
+    dependencies:
+      - target: BromleyWidgets
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: uk.org.bromleyislamiccentre.app
@@ -61,3 +63,28 @@ targets:
         NSLocationWhenInUseUsageDescription: "Used to point the Qibla compass towards Makkah and to refine prayer times for where you are."
         ITSAppUsesNonExemptEncryption: false
         UIStatusBarStyle: UIStatusBarStyleDarkContent
+
+  BromleyWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Widgets
+      - path: Sources/PrayerTimes.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: uk.org.bromleyislamiccentre.app.widgets
+        PRODUCT_NAME: BromleyWidgets
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        TARGETED_DEVICE_FAMILY: "1,2"
+        CODE_SIGNING_REQUIRED: NO
+        CODE_SIGN_IDENTITY: ""
+        DEVELOPMENT_TEAM: ""
+        SKIP_INSTALL: YES
+        INFOPLIST_KEY_CFBundleDisplayName: "Bromley IC Widgets"
+    info:
+      path: Widgets/Info.plist
+      properties:
+        CFBundleDisplayName: "Bromley IC Widgets"
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
