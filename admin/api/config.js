@@ -3,6 +3,19 @@ import { timingSafeEqual } from "node:crypto";
 import { validateConfig } from "./_validate.js";
 
 const PATH = "config.json";
+const AUTH_PATH = "auth-state.json";
+const MAX_FAILS = 10;
+const LOCK_MS = 15 * 60 * 1000;
+
+async function readJson(path) {
+  const { blobs } = await list({ prefix: path, limit: 1 });
+  if (!blobs.length) return null;
+  const res = await fetch(blobs[0].url, { cache: "no-store" });
+  return res.ok ? res.json() : null;
+}
+
+const writeJson = (path, value) =>
+  put(path, JSON.stringify(value), { access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true });
 
 const safeEqual = (a = "", b = "") => {
   const x = Buffer.from(a), y = Buffer.from(b);
@@ -24,7 +37,19 @@ export default async function handler(req, res) {
   if (req.method === "POST") {
     const passcode = process.env.ADMIN_PASSCODE;
     if (!passcode) return res.status(500).json({ error: "ADMIN_PASSCODE is not set on the server" });
-    if (!safeEqual(req.headers["x-admin-passcode"], passcode)) return res.status(401).json({ error: "Wrong passcode" });
+    // Lock out guessing: after MAX_FAILS wrong passcodes, refuse everything for LOCK_MS.
+    const now = Date.now();
+    let auth = (await readJson(AUTH_PATH)) || { count: 0, since: now };
+    if (now - auth.since > LOCK_MS) auth = { count: 0, since: now };
+    if (auth.count >= MAX_FAILS) {
+      const mins = Math.ceil((auth.since + LOCK_MS - now) / 60000);
+      return res.status(429).json({ error: `Too many wrong passcodes. Try again in ${mins} minute${mins === 1 ? "" : "s"}.` });
+    }
+    if (!safeEqual(req.headers["x-admin-passcode"], passcode)) {
+      await writeJson(AUTH_PATH, { count: auth.count + 1, since: auth.since });
+      return res.status(401).json({ error: "Wrong passcode" });
+    }
+    if (auth.count > 0) await writeJson(AUTH_PATH, { count: 0, since: now });
     const result = validateConfig(req.body);
     if (!result.ok) return res.status(400).json({ error: "Invalid content", details: result.errors });
     await put(PATH, JSON.stringify(result.value, null, 2), {

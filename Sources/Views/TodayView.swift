@@ -36,10 +36,11 @@ struct TodayView: View {
     private func header(now: Date) -> some View {
         HStack(spacing: 14) {
             Image("Logo")
+                .renderingMode(.template)
                 .resizable().scaledToFit()
-                .frame(width: 52, height: 52)
-                .padding(4)
-                .background(Theme.cream, in: RoundedRectangle(cornerRadius: 12))
+                .foregroundStyle(Theme.cream)
+                .frame(width: 60, height: 60)
+                .accessibilityLabel("Bromley Islamic Centre")
             VStack(alignment: .leading, spacing: 2) {
                 Eyebrow(text: "Today in Bromley")
                 Text(now.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: "en_GB"))))
