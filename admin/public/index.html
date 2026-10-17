@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>BIC App Editor</title>
+<style>
+  :root { --teal:#004845; --deep:#022228; --gold:#d9a53a; --cream:#fbf8f1; --ink:#12201f; --line:#d9d2c2; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:16px/1.5 system-ui,-apple-system,sans-serif; background:var(--cream); color:var(--ink); }
+  header { background:var(--teal); color:#fff; padding:20px 16px; }
+  header h1 { margin:0; font:600 22px Georgia,serif; }
+  header p { margin:4px 0 0; opacity:.8; font-size:14px; }
+  main { max-width:720px; margin:0 auto; padding:16px; }
+  section { background:#fff; border:1px solid var(--line); border-radius:14px; padding:16px; margin:16px 0; }
+  h2 { margin:0 0 4px; font:600 18px Georgia,serif; color:var(--teal); }
+  .hint { margin:0 0 12px; font-size:13px; color:#5b6a69; }
+  label { display:block; font-size:13px; font-weight:600; margin:10px 0 4px; }
+  input, textarea { width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:10px; font:inherit; background:#fff; }
+  textarea { min-height:84px; resize:vertical; }
+  .item { border:1px solid var(--line); border-radius:12px; padding:12px; margin:10px 0; background:#fdfcf8; }
+  .row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  button { font:600 15px system-ui; border:0; border-radius:10px; padding:11px 16px; cursor:pointer; }
+  .primary { background:var(--teal); color:#fff; width:100%; padding:14px; font-size:16px; }
+  .ghost { background:#eee8d8; color:var(--ink); }
+  .danger { background:#f3d9d4; color:#7a2318; }
+  #status { margin:12px 0; padding:12px; border-radius:10px; display:none; font-size:14px; }
+  #status.ok { display:block; background:#dff0e3; color:#16502a; }
+  #status.err { display:block; background:#f8dcd7; color:#7a2318; }
+  .bar { position:sticky; bottom:0; background:linear-gradient(transparent,var(--cream) 30%); padding:20px 0 12px; }
+</style>
+</head>
+<body>
+<header><h1>Bromley Islamic Centre app editor</h1><p>Changes appear in the app within a minute of publishing.</p></header>
+<main>
+  <section>
+    <h2>Jumu’ah times</h2>
+    <p class="hint">Shown on the Prayer tab. Write times like “1:15 pm”.</p>
+    <div id="jumuah"></div>
+    <button class="ghost" id="addJumuah">Add a Jumu’ah</button>
+  </section>
+  <section>
+    <h2>Venue notice</h2>
+    <p class="hint">The banner on the Prayer tab, for example the current temporary venue.</p>
+    <textarea id="venueBanner"></textarea>
+  </section>
+  <section>
+    <h2>Announcements</h2>
+    <p class="hint">Newest first.</p>
+    <div id="announcements"></div>
+    <button class="ghost" id="addAnnouncement">Add an announcement</button>
+  </section>
+  <section>
+    <h2>Events</h2>
+    <p class="hint">Shown under “Coming up” on the What’s on tab.</p>
+    <div id="events"></div>
+    <button class="ghost" id="addEvent">Add an event</button>
+  </section>
+  <section>
+    <h2>Ramadan</h2>
+    <label for="ramadanStart">First day of Ramadan (after moon sighting)</label>
+    <input id="ramadanStart" type="date">
+    <p class="hint">Leave empty to use the calendar calculation.</p>
+    <label for="ramadanNote">Taraweeh and iftar details</label>
+    <textarea id="ramadanNote"></textarea>
+  </section>
+  <section>
+    <h2>Publish</h2>
+    <label for="passcode">Passcode</label>
+    <input id="passcode" type="password" autocomplete="current-password">
+    <div id="status" role="status"></div>
+    <div class="bar"><button class="primary" id="publish">Publish to the app</button></div>
+  </section>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
+const state = { jumuah: [], announcements: [], events: [] };
+
+const schemas = {
+  jumuah: [["label","Name (e.g. 1st Jumu’ah)"],["khutbah","Khutbah time"],["jamaah","Jama’ah time"],["venue","Venue (optional)"],["note","Note (optional, e.g. Brothers only)"]],
+  announcements: [["date","Date (e.g. 23 October 2026)"],["title","Title"],["body","Message","area"]],
+  events: [["tag","Label (e.g. Weekly)"],["title","Title"],["when","When (optional)"],["detail","Description","area"],["note","Note (optional)"]],
+};
+
+function render(kind) {
+  const host = $(kind);
+  host.innerHTML = "";
+  state[kind].forEach((item, i) => {
+    const div = document.createElement("div");
+    div.className = "item";
+    div.innerHTML = schemas[kind].map(([k, label, type]) =>
+      `<label>${label}</label>` + (type === "area"
+        ? `<textarea data-k="${k}">${esc(item[k])}</textarea>`
+        : `<input data-k="${k}" value="${esc(item[k])}">`)).join("") +
+      `<div style="margin-top:10px"><button class="danger" data-del="${i}">Remove</button></div>`;
+    div.querySelectorAll("[data-k]").forEach((el) => el.addEventListener("input", () => { item[el.dataset.k] = el.value; }));
+    div.querySelector("[data-del]").addEventListener("click", () => { state[kind].splice(i, 1); render(kind); });
+    host.appendChild(div);
+  });
+}
+
+const blank = { jumuah: { label:"", khutbah:"", jamaah:"" }, announcements: { date:"", title:"", body:"" }, events: { tag:"", title:"", detail:"" } };
+for (const [btn, kind] of [["addJumuah","jumuah"],["addAnnouncement","announcements"],["addEvent","events"]]) {
+  $(btn).addEventListener("click", () => { state[kind].push({ ...blank[kind] }); render(kind); });
+}
+
+function show(msg, ok) { const s = $("status"); s.textContent = msg; s.className = ok ? "ok" : "err"; }
+
+async function load() {
+  let cfg = {};
+  try {
+    const res = await fetch("/api/config", { cache: "no-store" });
+    if (!res.ok) throw new Error(String(res.status));
+    cfg = await res.json();
+  } catch { show("Could not load the current content, so the defaults are shown. Check before publishing.", false); }
+  {
+    state.jumuah = cfg.jumuah ?? [{ label:"1st Jumu’ah", khutbah:"1:15 pm", jamaah:"1:30 pm" }, { label:"2nd Jumu’ah", khutbah:"2:00 pm", jamaah:"2:15 pm" }];
+    state.announcements = cfg.announcements ?? [];
+    state.events = cfg.events ?? [];
+    $("venueBanner").value = cfg.venueBanner ?? "We currently meet in temporary community spaces. Confirm the venue before you travel.";
+    $("ramadanStart").value = cfg.ramadanStart ?? "";
+    $("ramadanNote").value = cfg.ramadanNote ?? "";
+  }
+  ["jumuah","announcements","events"].forEach(render);
+}
+
+$("publish").addEventListener("click", async () => {
+  const clean = (arr) => arr.map((o) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, v.trim ? v.trim() : v])));
+  const body = {
+    jumuah: clean(state.jumuah), venueBanner: $("venueBanner").value.trim(),
+    announcements: clean(state.announcements), events: clean(state.events),
+    ramadanStart: $("ramadanStart").value, ramadanNote: $("ramadanNote").value.trim(),
+  };
+  $("publish").disabled = true;
+  try {
+    const res = await fetch("/api/config", { method: "POST", headers: { "content-type": "application/json", "x-admin-passcode": $("passcode").value }, body: JSON.stringify(body) });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok) show("Published. The app will pick this up next time it opens.", true);
+    else show((data.error || "Something went wrong") + (data.details ? ": " + data.details.join("; ") : ""), false);
+  } catch { show("No connection. Nothing was published.", false); }
+  $("publish").disabled = false;
+});
+
+load();
+</script>
+</body>
+</html>
