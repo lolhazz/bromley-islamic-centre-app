@@ -6,27 +6,45 @@ enum Theme {
     static let gold = Color(red: 0.851, green: 0.647, blue: 0.227)
     static let cream = Color(red: 0.984, green: 0.973, blue: 0.945)
     static let ink = Color(red: 0.07, green: 0.12, blue: 0.13)
+
+    // Adaptive tokens (light and dark variants live in Assets.xcassets).
+    static let bg = Color("Bg")
+    static let surface = Color("Surface")
+    static let stroke = Color("Stroke")
+    static let divider = Color("Divider")
+    static let textPrimary = Color("TextPrimary")
+    static let textSecondary = Color("TextSecondary")
+    /// Gold for text and icons: darker in light mode so it stays readable on cream.
+    static let accent = Color("AccentText")
+    /// The always-dark teal used for hero blocks in both appearances.
+    static let hero = Color("Hero")
+    /// Text colours that sit on `hero`.
+    static let onHero = Color.white
+    static let onHeroSecondary = Color(red: 0.78, green: 0.85, blue: 0.84)
+    static let onHeroAccent = Color(red: 0.878, green: 0.690, blue: 0.290)
 }
 
 extension Font {
-    static func display(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
+    /// Newsreader, scales with Dynamic Type relative to `style`.
+    static func display(_ size: CGFloat, weight: Font.Weight = .regular, relativeTo style: Font.TextStyle = .title2) -> Font {
         let name: String
         switch weight {
         case .semibold, .bold: name = "Newsreader-SemiBold"
         case .medium: name = "Newsreader-Medium"
         default: name = "Newsreader-Regular"
         }
-        return .custom(name, size: size)
+        return .custom(name, size: size, relativeTo: style)
     }
 
-    static func body(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
+    /// DM Sans, scales with Dynamic Type relative to `style`.
+    static func body(_ size: CGFloat, weight: Font.Weight = .regular, relativeTo style: Font.TextStyle = .body) -> Font {
         let name: String
         switch weight {
         case .bold, .semibold: name = "DMSans-Bold"
         case .medium: name = "DMSans-Medium"
         default: name = "DMSans-Regular"
         }
-        return .custom(name, size: size)
+        return .custom(name, size: size, relativeTo: style)
     }
 }
 
@@ -37,13 +55,6 @@ struct Eyebrow: View {
             .font(.body(12, weight: .bold))
             .tracking(1.6)
             .foregroundStyle(Theme.gold)
-    }
-}
-
-struct ScreenBackground: View {
-    var body: some View {
-        LinearGradient(colors: [Theme.teal, Theme.tealDeep], startPoint: .top, endPoint: .bottom)
-            .ignoresSafeArea()
     }
 }
 

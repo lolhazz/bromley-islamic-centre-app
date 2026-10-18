@@ -141,6 +141,15 @@ enum TimeFormat {
         formatter.string(from: d).replacingOccurrences(of: "AM", with: "am").replacingOccurrences(of: "PM", with: "pm")
     }
 
+    /// "8 hours 8 minutes" for VoiceOver.
+    static func spoken(_ s: TimeInterval) -> String {
+        let m = max(0, Int((s / 60).rounded()))
+        let h = m / 60, r = m % 60
+        func unit(_ n: Int, _ w: String) -> String { "\(n) \(w)\(n == 1 ? "" : "s")" }
+        if h == 0 { return unit(r, "minute") }
+        return r == 0 ? unit(h, "hour") : "\(unit(h, "hour")) \(unit(r, "minute"))"
+    }
+
     static func countdown(_ s: TimeInterval) -> String {
         let m = max(0, Int((s / 60).rounded()))
         return m >= 60 ? "\(m / 60)h \(m % 60)m" : "\(m)m"

@@ -53,6 +53,14 @@ struct TimeFormatTests {
         #expect(TimeFormat.clock(TestClock.date(2026, 10, 23, 12, 0)) == "12:00 pm")
     }
 
+    @Test func spokenCountdownIsReadable() {
+        #expect(TimeFormat.spoken(0) == "0 minutes")
+        #expect(TimeFormat.spoken(60) == "1 minute")
+        #expect(TimeFormat.spoken(3600) == "1 hour")
+        #expect(TimeFormat.spoken(8 * 3600 + 8 * 60) == "8 hours 8 minutes")
+        #expect(TimeFormat.spoken(3600 + 60) == "1 hour 1 minute")
+    }
+
     @Test func countdownFormatsMinutesAndHours() {
         #expect(TimeFormat.countdown(0) == "0m")
         #expect(TimeFormat.countdown(59 * 60) == "59m")
