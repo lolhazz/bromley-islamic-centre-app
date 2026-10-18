@@ -29,6 +29,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: uk.org.bromleyislamiccentre.app
         PRODUCT_NAME: "Bromley IC"
+        PRODUCT_MODULE_NAME: BromleyIslamicCentre
         MARKETING_VERSION: "0.1.0"
         CURRENT_PROJECT_VERSION: "1"
         TARGETED_DEVICE_FAMILY: "1,2"
@@ -88,3 +89,29 @@ targets:
         CFBundleDisplayName: "Bromley IC Widgets"
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
+
+  BromleyTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: Tests
+    dependencies:
+      - target: BromleyIslamicCentre
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: uk.org.bromleyislamiccentre.app.tests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Bromley IC.app/Bromley IC"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+        CODE_SIGNING_REQUIRED: NO
+        CODE_SIGN_IDENTITY: ""
+        DEVELOPMENT_TEAM: ""
+
+schemes:
+  BromleyIslamicCentre:
+    build:
+      targets:
+        BromleyIslamicCentre: all
+    test:
+      targets:
+        - BromleyTests
