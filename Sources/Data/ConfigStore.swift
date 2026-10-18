@@ -25,8 +25,8 @@ final class ConfigStore: ObservableObject {
     @Published private(set) var ramadanNote: String?
     @Published private(set) var lastUpdated: Date?
 
-    /// Set to the hosted JSON address once the committee's editor exists. nil = bundled content only.
-    static let configURL: URL? = nil
+    /// Hosted JSON the committee edits through the admin page (see `admin/`). nil = bundled content only.
+    static let configURL = URL(string: "https://bic-app-admin-hoodboyzt1-1429s-projects.vercel.app/api/config")
 
     private static let cacheKey = "remoteConfigCache"
     private static let dateKey = "remoteConfigDate"
