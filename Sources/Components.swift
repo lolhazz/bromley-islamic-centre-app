@@ -43,7 +43,7 @@ struct ScreenBackground: View {
         ZStack {
             Theme.bg
             StarPattern()
-                .foregroundStyle(Theme.accent.opacity(0.07))
+                .foregroundStyle(Theme.accent.opacity(0.045))
         }
         .ignoresSafeArea()
     }
@@ -137,5 +137,15 @@ struct SectionTitle: View {
     var body: some View {
         Text(text).font(.display(24, weight: .semibold)).foregroundStyle(Theme.textPrimary)
             .accessibilityAddTraits(.isHeader)
+    }
+}
+
+extension View {
+    /// Bordered surface for the few things that deserve a box.
+    func surfaceCard(radius: CGFloat = 20, stroke: Color = Theme.stroke) -> some View {
+        self.padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: radius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: radius, style: .continuous).stroke(stroke))
     }
 }

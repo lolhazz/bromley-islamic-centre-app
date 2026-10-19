@@ -54,7 +54,7 @@ struct Eyebrow: View {
         Text(text.uppercased())
             .font(.body(12, weight: .bold))
             .tracking(1.6)
-            .foregroundStyle(Theme.gold)
+            .foregroundStyle(Theme.accent)
     }
 }
 

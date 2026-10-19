@@ -18,7 +18,7 @@ struct BromleyApp: App {
             RootView()
                 .environmentObject(alerts)
                 .environmentObject(config)
-                .tint(Theme.gold)
+                .tint(Theme.accent)
                 .task { await sync() }
                 .onChange(of: phase) { _, new in if new == .active { Task { await sync() } } }
         }
@@ -37,8 +37,5 @@ struct RootView: View {
             CentreView()
                 .tabItem { Label("Centre", systemImage: "building.columns") }
         }
-        .toolbarBackground(Theme.tealDeep, for: .tabBar)
-        .toolbarBackground(.visible, for: .tabBar)
-        .toolbarColorScheme(.dark, for: .tabBar)
     }
 }
