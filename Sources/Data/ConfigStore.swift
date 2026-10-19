@@ -15,8 +15,11 @@ struct RemoteConfig: Codable {
 
 /// Live content: bundled defaults, overridden by the last good online copy.
 /// The online file is fetched at launch and whenever the app returns to the foreground.
+enum LoadState: Equatable { case idle, loading, loaded, failed }
+
 @MainActor
 final class ConfigStore: ObservableObject {
+    @Published private(set) var loadState: LoadState = .idle
     @Published private(set) var jumuah = Content.jumuah
     @Published private(set) var venueBanner = Content.venueBanner
     @Published private(set) var announcements = Content.announcements
@@ -41,12 +44,17 @@ final class ConfigStore: ObservableObject {
 
     func refresh() async {
         guard let url = Self.configURL else { return }
+        loadState = .loading
         var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 10)
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         guard let (data, response) = try? await URLSession.shared.data(for: request),
               (response as? HTTPURLResponse)?.statusCode == 200,
-              let cfg = try? JSONDecoder().decode(RemoteConfig.self, from: data) else { return }
+              let cfg = try? JSONDecoder().decode(RemoteConfig.self, from: data) else {
+            loadState = .failed
+            return
+        }
         apply(cfg)
+        loadState = .loaded
         lastUpdated = .now
         UserDefaults.standard.set(data, forKey: Self.cacheKey)
         UserDefaults.standard.set(lastUpdated, forKey: Self.dateKey)
