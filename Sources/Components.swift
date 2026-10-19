@@ -62,11 +62,11 @@ struct HeroCard<Content: View>: View {
                     EightPointStar()
                         .stroke(Theme.onHeroAccent.opacity(0.22), lineWidth: 1.5)
                         .frame(width: 190, height: 190)
-                        .offset(x: 55, y: 55)
+                        .offset(x: 95, y: 95)
                     EightPointStar()
                         .stroke(Theme.onHeroAccent.opacity(0.14), lineWidth: 1.5)
                         .frame(width: 130, height: 130)
-                        .offset(x: 25, y: 25)
+                        .offset(x: 70, y: 70)
                 }
                 .clipped()
                 .accessibilityHidden(true)
@@ -147,5 +147,56 @@ extension View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Theme.surface, in: RoundedRectangle(cornerRadius: radius, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: radius, style: .continuous).stroke(stroke))
+    }
+}
+
+
+/// Title and descriptive text row for non-navigating lists (volunteer teams, policies, trustees).
+struct InfoRow: View {
+    let title: String
+    var detail: String? = nil
+    var text: String? = nil
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title).font(.body(17, weight: .bold)).foregroundStyle(Theme.textPrimary)
+            if let detail { Text(detail).font(.body(14, weight: .medium, relativeTo: .subheadline)).foregroundStyle(Theme.accent) }
+            if let text { Text(text).font(.body(15, relativeTo: .callout)).foregroundStyle(Theme.textSecondary) }
+        }
+        .padding(.vertical, 14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// Small status line for content that comes from the committee's online feed.
+struct FeedStatus: View {
+    @ObservedObject var config: ConfigStore
+    var body: some View {
+        Group {
+            switch config.loadState {
+            case .loading:
+                HStack(spacing: 8) { ProgressView(); Text("Checking for updates…") }
+            case .failed:
+                VStack(alignment: .leading, spacing: 6) {
+                    Label("Couldn’t check for updates. Showing the last saved information.", systemImage: "wifi.slash")
+                    Button("Try again") { Task { await config.refresh() } }
+                        .font(.body(15, weight: .bold)).foregroundStyle(Theme.accent)
+                }
+            case .loaded:
+                if let d = config.lastUpdated { Text("Updated \(d.formatted(.relative(presentation: .named)))") }
+            case .idle:
+                EmptyView()
+            }
+        }
+        .font(.body(13, relativeTo: .footnote)).foregroundStyle(Theme.textSecondary)
+    }
+}
+
+/// Empty-state message with an optional follow-up link.
+struct EmptyNote: View {
+    let text: String
+    var body: some View {
+        Text(text).font(.body(15, relativeTo: .callout)).foregroundStyle(Theme.textSecondary)
+            .padding(.vertical, 14).frame(maxWidth: .infinity, alignment: .leading)
     }
 }

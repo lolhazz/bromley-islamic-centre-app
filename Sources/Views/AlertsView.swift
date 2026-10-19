@@ -6,35 +6,44 @@ struct AlertsView: View {
 
     var body: some View {
         NavigationStack {
-            Screen(title: "Prayer alerts") {
-                Text("Get a notification at the adhan for the prayers you choose. Alerts are scheduled on your phone and work offline.")
-                    .font(.body(15)).foregroundStyle(.white.opacity(0.8))
-                VStack(spacing: 0) {
+            Form {
+                Section {
                     ForEach(Prayer.allCases) { p in
                         Toggle(p.rawValue, isOn: Binding(
                             get: { alerts.enabled.contains(p) },
                             set: { v in Task { await alerts.toggle(p, on: v) } }))
-                            .font(.body(16, weight: .medium)).padding(.vertical, 12)
-                        if p != .isha { Divider().overlay(.white.opacity(0.12)) }
+                    }
+                } header: {
+                    Text("Notify me at the adhan")
+                } footer: {
+                    Text("Alerts are scheduled on your phone and work without a connection.")
+                }
+                Section {
+                    Toggle("10 minutes before jama’ah", isOn: Binding(
+                        get: { alerts.iqamahReminder },
+                        set: { v in Task { await alerts.setIqamah(v) } }))
+                    Toggle("Ramadan: imsak and iftar", isOn: Binding(
+                        get: { alerts.ramadanAlerts },
+                        set: { v in Task { await alerts.setRamadan(v) } }))
+                } header: {
+                    Text("Reminders")
+                }
+                if alerts.permissionDenied {
+                    Section {
+                        Label("Notifications are turned off for this app.", systemImage: "bell.slash")
+                        Link("Open Settings", destination: URL(string: "app-settings:")!)
+                    } footer: {
+                        Text("Turn on notifications in Settings to receive prayer alerts.")
                     }
                 }
-                .card()
-                Toggle("Remind me 10 minutes before jama’ah", isOn: Binding(
-                    get: { alerts.iqamahReminder },
-                    set: { v in Task { await alerts.setIqamah(v) } }))
-                    .font(.body(15, weight: .medium)).card()
-                Toggle("Ramadan: imsak and iftar alerts", isOn: Binding(
-                    get: { alerts.ramadanAlerts },
-                    set: { v in Task { await alerts.setRamadan(v) } }))
-                    .font(.body(15, weight: .medium)).card()
-                if alerts.permissionDenied {
-                    Text("Notifications are turned off for this app. Enable them in Settings to receive alerts.")
-                        .font(.body(14)).foregroundStyle(Theme.gold)
+                Section {
+                    Text("Adhan times are calculated for Bromley. Congregational times can differ. Confirm the venue and jama’ah time before you travel.")
+                        .font(.footnote).foregroundStyle(.secondary)
                 }
-                Text("Adhan times are calculated for Bromley. Congregational times can differ. Confirm the venue and jama’ah time before you travel.")
-                    .font(.body(13)).foregroundStyle(.white.opacity(0.6))
             }
-            .tint(Theme.gold)
+            .font(.body(17))
+            .navigationTitle("Prayer alerts")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
         }
     }
