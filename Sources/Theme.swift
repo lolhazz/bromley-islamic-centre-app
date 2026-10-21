@@ -58,49 +58,20 @@ struct Eyebrow: View {
     }
 }
 
-extension View {
-    func card(radius: CGFloat = 22, stroke: Color = .white.opacity(0.12)) -> some View {
-        self.padding(16)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: radius))
-            .overlay(RoundedRectangle(cornerRadius: radius).stroke(stroke))
-    }
-}
-
+/// Page scaffold: scrolling column on the adaptive background, readable width on iPad.
 struct Screen<Content: View>: View {
     var title: String? = nil
     @ViewBuilder var content: Content
     var body: some View {
-        ZStack {
-            ScreenBackground()
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) { content }
-                    .padding(20)
-            }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) { content }
+                .padding(20)
+                .frame(maxWidth: 720)
+                .frame(maxWidth: .infinity)
         }
-        .preferredColorScheme(.dark)
-        .toolbarBackground(Theme.teal, for: .navigationBar)
+        .background(ScreenBackground())
         .navigationBarTitleDisplayMode(.inline)
         .navigationTitle(title ?? "")
-    }
-}
-
-struct LinkRow: View {
-    let title: String, icon: String, url: String
-    var subtitle: String? = nil
-    var body: some View {
-        Link(destination: URL(string: url)!) {
-            HStack(spacing: 14) {
-                Image(systemName: icon).foregroundStyle(Theme.gold).frame(width: 28)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(.body(16, weight: .medium)).foregroundStyle(.white)
-                    if let subtitle { Text(subtitle).font(.body(13)).foregroundStyle(.white.opacity(0.65)) }
-                }
-                Spacer()
-                Image(systemName: "arrow.up.right").font(.footnote).foregroundStyle(.white.opacity(0.5))
-            }
-            .card(radius: 18)
-        }
     }
 }
 
@@ -110,8 +81,9 @@ struct PageTitle: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Eyebrow(text: eyebrow)
-            Text(title).font(.display(32, weight: .semibold)).foregroundStyle(.white)
-            if let subtitle { Text(subtitle).font(.body(16)).foregroundStyle(.white.opacity(0.8)) }
+            Text(title).font(.display(34, weight: .semibold, relativeTo: .largeTitle)).foregroundStyle(Theme.textPrimary)
+                .accessibilityAddTraits(.isHeader)
+            if let subtitle { Text(subtitle).font(.body(17)).foregroundStyle(Theme.textSecondary) }
         }
     }
 }
