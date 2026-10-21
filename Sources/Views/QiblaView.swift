@@ -16,10 +16,12 @@ final class QiblaModel: NSObject, ObservableObject, CLLocationManagerDelegate {
         status = manager.authorizationStatus
     }
 
+    var headingAvailable: Bool { CLLocationManager.headingAvailable() }
+
     func start() {
         if status == .notDetermined { manager.requestWhenInUseAuthorization() }
         manager.requestLocation()
-        manager.startUpdatingHeading()
+        if headingAvailable { manager.startUpdatingHeading() }
     }
 
     func stop() { manager.stopUpdatingHeading() }
@@ -34,10 +36,22 @@ final class QiblaModel: NSObject, ObservableObject, CLLocationManagerDelegate {
         return (atan2(y, x) * 180 / .pi + 360).truncatingRemainder(dividingBy: 360)
     }
 
+    /// Degrees to turn to face Makkah, -180...180 (positive = turn right). nil without a heading.
+    var turn: Double? {
+        guard let heading else { return nil }
+        var d = (qiblaBearing - heading).truncatingRemainder(dividingBy: 360)
+        if d > 180 { d -= 360 }
+        if d < -180 { d += 360 }
+        return d
+    }
+
     nonisolated func locationManagerDidChangeAuthorization(_ m: CLLocationManager) {
         Task { @MainActor in
             status = m.authorizationStatus
-            if status == .authorizedWhenInUse || status == .authorizedAlways { m.requestLocation(); m.startUpdatingHeading() }
+            if status == .authorizedWhenInUse || status == .authorizedAlways {
+                m.requestLocation()
+                if CLLocationManager.headingAvailable() { m.startUpdatingHeading() }
+            }
         }
     }
     nonisolated func locationManager(_ m: CLLocationManager, didUpdateLocations l: [CLLocation]) {
@@ -51,62 +65,120 @@ final class QiblaModel: NSObject, ObservableObject, CLLocationManagerDelegate {
 
 struct QiblaView: View {
     @StateObject private var model = QiblaModel()
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var aligned: Bool { abs(model.turn ?? 180) <= 3 }
 
     var body: some View {
-        ZStack {
-            ScreenBackground()
-            VStack(spacing: 28) {
-                VStack(spacing: 6) {
-                    Eyebrow(text: "Qibla")
-                    Text("Direction of Makkah").font(.display(30, weight: .semibold)).foregroundStyle(.white)
-                }
+        NavigationStack {
+            Screen {
+                PageTitle(eyebrow: "Qibla", title: "Direction of Makkah")
                 compass
-                Text(caption).font(.body(14)).foregroundStyle(.white.opacity(0.8)).multilineTextAlignment(.center)
-                    .padding(.horizontal, 24)
+                    .frame(maxWidth: .infinity)
+                readout
             }
-            .padding(.top, 40)
+            .onAppear { model.start() }
+            .onDisappear { model.stop() }
+            .sensoryFeedback(.success, trigger: aligned) { _, now in now }
         }
-        .preferredColorScheme(.dark)
-        .onAppear { model.start() }
-        .onDisappear { model.stop() }
     }
 
-    private var rotation: Double {
-        // Needle points to Qibla relative to the phone's heading; without a heading it points at the bearing from north.
-        model.qiblaBearing - (model.heading ?? 0)
-    }
+    // MARK: Compass
 
     private var compass: some View {
-        ZStack {
-            Circle().stroke(Theme.gold.opacity(0.4), lineWidth: 2)
-            Circle().stroke(.white.opacity(0.1), lineWidth: 1).padding(28)
-            ForEach(0..<36) { i in
-                Rectangle().fill(.white.opacity(i % 9 == 0 ? 0.7 : 0.25))
-                    .frame(width: 2, height: i % 9 == 0 ? 14 : 7)
-                    .offset(y: -142).rotationEffect(.degrees(Double(i) * 10))
+        GeometryReader { geo in
+            let size = min(geo.size.width, 320)
+            let r = size / 2
+            ZStack {
+                dial(radius: r)
+                    .rotationEffect(.degrees(-(model.heading ?? 0)))
+                    .animation(reduceMotion ? nil : .easeOut(duration: 0.25), value: model.heading)
+                // Fixed marker: the direction the phone points.
+                Image(systemName: "arrowtriangle.down.fill")
+                    .font(.title3).foregroundStyle(aligned ? Theme.accent : Theme.textPrimary)
+                    .offset(y: -r - 14)
             }
-            VStack(spacing: 0) {
-                Image(systemName: "location.north.fill").font(.system(size: 54)).foregroundStyle(Theme.gold)
-                Capsule().fill(Theme.gold.opacity(0.5)).frame(width: 3, height: 70)
-            }
-            .offset(y: -20)
-            .rotationEffect(.degrees(rotation))
-            .animation(.easeOut(duration: 0.2), value: rotation)
+            .frame(width: size, height: size)
+            .position(x: geo.size.width / 2, y: geo.size.height / 2)
         }
-        .frame(width: 300, height: 300)
+        .frame(height: 360)
+        .accessibilityElement(children: .ignore)
         .accessibilityLabel("Qibla compass")
-        .accessibilityValue("Makkah is \(Int(model.qiblaBearing)) degrees from north")
+        .accessibilityValue(spoken)
+    }
+
+    private func dial(radius r: CGFloat) -> some View {
+        ZStack {
+            Circle().stroke(Theme.stroke, lineWidth: 1).padding(r * 0.18)
+            EightPointStar()
+                .stroke(aligned ? Theme.accent : Theme.accent.opacity(0.55), lineWidth: aligned ? 3 : 2)
+            ForEach(0..<72, id: \.self) { i in
+                let major = i % 18 == 0
+                Rectangle().fill(Theme.textSecondary.opacity(major ? 0.9 : 0.4))
+                    .frame(width: major ? 2 : 1, height: major ? 12 : 6)
+                    .offset(y: -(r - 4))
+                    .rotationEffect(.degrees(Double(i) * 5))
+            }
+            ForEach(Array(["N", "E", "S", "W"].enumerated()), id: \.offset) { i, letter in
+                Text(letter).font(.body(15, weight: .bold, relativeTo: .caption))
+                    .foregroundStyle(letter == "N" ? Theme.accent : Theme.textSecondary)
+                    .rotationEffect(.degrees(-Double(i) * 90 + (model.heading ?? 0)))
+                    .offset(y: -(r * 0.62))
+                    .rotationEffect(.degrees(Double(i) * 90))
+            }
+            // Makkah marker at its bearing on the dial, kept upright on screen.
+            ZStack {
+                Capsule().fill(Theme.accent).frame(width: 4, height: r * 0.5).offset(y: -r * 0.25)
+                Image(systemName: "moon.stars.fill")
+                    .font(.system(size: 22)).foregroundStyle(Theme.bg)
+                    .frame(width: 44, height: 44)
+                    .background(Theme.accent, in: Circle())
+                    .rotationEffect(.degrees((model.heading ?? 0) - model.qiblaBearing))
+                    .offset(y: -r * 0.62)
+            }
+            .rotationEffect(.degrees(model.qiblaBearing))
+        }
+        .frame(width: r * 2, height: r * 2)
+    }
+
+    // MARK: Text readout
+
+    private var readout: some View {
+        VStack(spacing: 8) {
+            Text("\(Int(model.qiblaBearing.rounded()))°")
+                .font(.display(56, weight: .semibold, relativeTo: .largeTitle)).foregroundStyle(Theme.textPrimary)
+            Text(caption).font(.body(17, weight: aligned ? .bold : .regular)).foregroundStyle(aligned ? Theme.accent : Theme.textSecondary)
+                .multilineTextAlignment(.center)
+            if let note { Text(note).font(.body(14, relativeTo: .footnote)).foregroundStyle(Theme.textSecondary).multilineTextAlignment(.center) }
+            if model.status == .denied || model.status == .restricted {
+                Link("Open Settings", destination: URL(string: "app-settings:")!)
+                    .font(.body(15, weight: .bold)).foregroundStyle(Theme.accent)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .combine)
     }
 
     private var caption: String {
-        let b = Int(model.qiblaBearing.rounded())
+        guard let turn = model.turn else { return "Makkah is \(Int(model.qiblaBearing.rounded()))° from north" }
+        if aligned { return "Facing Makkah" }
+        let d = Int(abs(turn).rounded())
+        return "Turn \(d)° to the \(turn > 0 ? "right" : "left")"
+    }
+
+    private var note: String? {
         switch model.status {
         case .denied, .restricted:
-            return "Makkah is \(b)° from north in Bromley. Allow location in Settings for live compass guidance."
+            return "Location is off, so this uses Bromley as your position. Allow location in Settings for a live compass."
         default:
-            return model.heading == nil
-                ? "Makkah is \(b)° from north. Hold your phone flat to use the live compass."
-                : "Turn until the arrow points straight up. Makkah is \(b)° from north."
+            return model.headingAvailable ? (model.heading == nil ? "Hold your phone flat and move it in a figure of eight to calibrate." : nil)
+                                          : "This device has no compass, so the arrow shows the bearing from north."
         }
+    }
+
+    private var spoken: String {
+        let b = Int(model.qiblaBearing.rounded())
+        guard let turn = model.turn else { return "Makkah is \(b) degrees from north." }
+        return aligned ? "You are facing Makkah." : "Makkah is \(b) degrees from north. Turn \(Int(abs(turn).rounded())) degrees to the \(turn > 0 ? "right" : "left")."
     }
 }
