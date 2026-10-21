@@ -1,7 +1,9 @@
 import SwiftUI
 
 struct CentreView: View {
-    private let tiles = [GridItem(.adaptive(minimum: 160), spacing: 12)]
+    /// Minimum tile width grows with text size, so tiles drop to one column instead of breaking words.
+    @ScaledMetric(relativeTo: .body) private var tileMinWidth: CGFloat = 160
+    private var tiles: [GridItem] { [GridItem(.adaptive(minimum: tileMinWidth), spacing: 12)] }
 
     var body: some View {
         NavigationStack {
@@ -36,11 +38,11 @@ struct CentreView: View {
     private func tile<D: View>(_ title: String, _ subtitle: String, _ icon: String, @ViewBuilder _ dest: @escaping () -> D) -> some View {
         NavigationLink(destination: dest) {
             VStack(alignment: .leading, spacing: 10) {
-                Image(systemName: icon).font(.title2).foregroundStyle(Theme.accent).frame(height: 36, alignment: .leading).accessibilityHidden(true)
+                Image(systemName: icon).font(.title2).foregroundStyle(Theme.accent).frame(minHeight: 36, alignment: .leading).accessibilityHidden(true)
                 Text(title).font(.display(22, weight: .semibold, relativeTo: .title3)).foregroundStyle(Theme.textPrimary)
                 Text(subtitle).font(.body(14, relativeTo: .footnote)).foregroundStyle(Theme.textSecondary)
                     .multilineTextAlignment(.leading)
-                    .lineLimit(2, reservesSpace: true)
+                    .lineLimit(2...)
             }
             .padding(16)
             .frame(maxWidth: .infinity, minHeight: 130, maxHeight: .infinity, alignment: .topLeading)
