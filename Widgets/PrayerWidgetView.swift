@@ -209,8 +209,8 @@ struct PrayerWidgetView: View {
             } else {
                 Text("Jama’ah now").font(.title3.weight(.semibold))
             }
-            Text("Adhan \(TimeFormat.clock(entry.current.adhan))  ·  Iqamah \(TimeFormat.clock(entry.current.iqamah))")
-                .font(.caption2).lineLimit(1).minimumScaleFactor(0.8)
+            Text("Adhan \(shortClock(entry.current.adhan))  ·  Iqamah \(shortClock(entry.current.iqamah))")
+                .font(.caption2).lineLimit(1).minimumScaleFactor(0.7)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
