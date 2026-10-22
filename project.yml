@@ -70,7 +70,14 @@ targets:
     platform: iOS
     sources:
       - path: Widgets
+        excludes:
+          - Info.plist
       - path: Sources/PrayerTimes.swift
+      - path: Sources/Ramadan.swift
+      - path: Sources/EightPointStar.swift
+      - path: Resources
+        includes:
+          - "*.ttf"
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: uk.org.bromleyislamiccentre.app.widgets
@@ -87,6 +94,10 @@ targets:
       path: Widgets/Info.plist
       properties:
         CFBundleDisplayName: "Bromley IC Widgets"
+        UIAppFonts:
+          - Newsreader-SemiBold.ttf
+          - DMSans-Regular.ttf
+          - DMSans-Bold.ttf
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
 
@@ -95,6 +106,8 @@ targets:
     platform: iOS
     sources:
       - path: Tests
+      - path: Widgets/PrayerProvider.swift
+      - path: Widgets/PrayerWidgetView.swift
     dependencies:
       - target: BromleyIslamicCentre
     settings:
