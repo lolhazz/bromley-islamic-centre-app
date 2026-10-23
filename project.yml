@@ -54,6 +54,10 @@ targets:
           - UIInterfaceOrientationPortraitUpsideDown
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
+        BGTaskSchedulerPermittedIdentifiers:
+          - uk.org.bromleyislamiccentre.app.refresh
+        UIBackgroundModes:
+          - fetch
         UIAppFonts:
           - Newsreader-Regular.ttf
           - Newsreader-Medium.ttf

@@ -16,7 +16,11 @@ struct AlertsView: View {
                 } header: {
                     Text("Notify me at the adhan")
                 } footer: {
-                    Text("Alerts are scheduled on your phone and work without a connection.")
+                    if let until = alerts.coveredUntil {
+                        Text("Alerts are set up until \(until.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: "en_GB")))). They work without a connection, top up in the background and whenever you open the app, and we remind you before they run out.")
+                    } else {
+                        Text("Alerts are scheduled on your phone and work without a connection.")
+                    }
                 }
                 Section {
                     Toggle("10 minutes before jama’ah", isOn: Binding(
