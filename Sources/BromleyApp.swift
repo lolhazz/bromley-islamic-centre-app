@@ -1,10 +1,21 @@
 import SwiftUI
+import BackgroundTasks
 
 @main
 struct BromleyApp: App {
     @StateObject private var alerts = AlertSettings()
     @StateObject private var config = ConfigStore()
     @Environment(\.scenePhase) private var phase
+
+    /// Identifier of the daily background refresh that tops up prayer alerts (also listed in Info.plist).
+    static let refreshID = "uk.org.bromleyislamiccentre.app.refresh"
+
+    private func scheduleRefresh() {
+        let request = BGAppRefreshTaskRequest(identifier: Self.refreshID)
+        request.earliestBeginDate = Date(timeIntervalSinceNow: 12 * 60 * 60)
+        try? BGTaskScheduler.shared.submit(request)
+    }
+
     private func sync() async {
         alerts.ramadanOverride = config.ramadanStart
         alerts.reschedule()
@@ -20,7 +31,14 @@ struct BromleyApp: App {
                 .environmentObject(config)
                 .tint(Theme.accent)
                 .task { await sync() }
-                .onChange(of: phase) { _, new in if new == .active { Task { await sync() } } }
+                .onChange(of: phase) { _, new in
+                    if new == .active { Task { await sync() } }
+                    if new == .background { scheduleRefresh() }
+                }
+        }
+        .backgroundTask(.appRefresh(Self.refreshID)) {
+            await sync()
+            await scheduleRefresh()
         }
     }
 }
