@@ -8,7 +8,7 @@ struct CentreView: View {
     var body: some View {
         NavigationStack {
             Screen {
-                PageTitle(eyebrow: "Faith · Community · Welcome", title: "Bromley Islamic Centre",
+                PageTitle(title: "Bromley Islamic Centre",
                           subtitle: "A place to pray. A community to belong to.")
                 LazyVGrid(columns: tiles, spacing: 12) {
                     tile("Services", "Nikah, counselling, youth, mediation", "square.grid.2x2") { ServicesView() }
@@ -24,11 +24,11 @@ struct CentreView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     SectionTitle("Online")
                     RowList {
-                        ExternalRow(title: "Support the Mosque Fund", icon: "heart", url: Site.mosqueFund, subtitle: "Bromley Needs a Mosque")
-                        ExternalRow(title: "Mosque project updates", icon: "hammer", url: Site.page("/updates"))
-                        ExternalRow(title: "Madrasah parent & teacher portal", icon: "person.crop.circle", url: Site.madrasahPortal,
+                        ExternalRow(title: "Support the Mosque Fund", url: Site.mosqueFund, subtitle: "Bromley Needs a Mosque")
+                        ExternalRow(title: "Mosque project updates", url: Site.page("/updates"))
+                        ExternalRow(title: "Madrasah parent & teacher portal", url: Site.madrasahPortal,
                                     subtitle: "Opens the centre’s secure sign-in")
-                        ExternalRow(title: "Website", icon: "globe", url: Site.base)
+                        ExternalRow(title: "Website", url: Site.base)
                     }
                 }
             }
@@ -53,7 +53,7 @@ struct CentreView: View {
     }
 
     private func link<D: View>(_ title: String, _ subtitle: String, _ icon: String, @ViewBuilder _ dest: @escaping () -> D) -> some View {
-        NavigationLink(destination: dest) { ListRow(title: title, subtitle: subtitle, icon: icon) }
+        NavigationLink(destination: dest) { ListRow(title: title, subtitle: subtitle) }
             .buttonStyle(.plain)
     }
 }
@@ -61,7 +61,7 @@ struct CentreView: View {
 struct ServicesView: View {
     var body: some View {
         Screen(title: "Services") {
-            PageTitle(eyebrow: "Services", title: "Serving our community with care",
+            PageTitle(title: "Serving our community with care",
                       subtitle: "Support for every stage of life.")
             RowList {
                 ForEach(Content.services) { s in
@@ -93,12 +93,12 @@ struct ServicesView: View {
 struct VolunteerView: View {
     var body: some View {
         Screen(title: "Volunteer") {
-            PageTitle(eyebrow: "Volunteer", title: "Serve your community",
+            PageTitle(title: "Serve your community",
                       subtitle: "“The best of people are those most beneficial to people.”")
             RowList {
                 ForEach(Content.volunteerTeams, id: \.0) { InfoRow(title: $0.0, text: $0.1) }
             }
-            RowList { ExternalRow(title: "Register as a volunteer", icon: "pencil.and.list.clipboard", url: Site.page("/volunteer"),
+            RowList { ExternalRow(title: "Register as a volunteer", url: Site.page("/volunteer"),
                                   subtitle: "Opens the form on our website") }
         }
     }
@@ -107,12 +107,12 @@ struct VolunteerView: View {
 struct SponsorsView: View {
     var body: some View {
         Screen(title: "Sponsors") {
-            PageTitle(eyebrow: "Get involved", title: "Sponsors & partners",
+            PageTitle(title: "Sponsors & partners",
                       subtitle: "Sponsor a specific need and share in the reward of every prayer, lesson and gathering it makes possible.")
             RowList {
                 ForEach(Content.sponsors, id: \.0) { InfoRow(title: $0.0, text: $0.1) }
             }
-            RowList { ExternalRow(title: "Enquire about sponsorship", icon: "envelope", url: Site.page("/sponsors")) }
+            RowList { ExternalRow(title: "Enquire about sponsorship", url: Site.page("/sponsors")) }
         }
     }
 }
@@ -120,7 +120,7 @@ struct SponsorsView: View {
 struct AboutView: View {
     var body: some View {
         Screen(title: "Our story") {
-            PageTitle(eyebrow: "About us", title: "A community journey, rooted in faith")
+            PageTitle(title: "A community journey, rooted in faith")
             VStack(alignment: .leading, spacing: 10) {
                 SectionTitle("Our mission")
                 Text("To foster a vibrant and inclusive Muslim community that strives for spiritual growth, supports personal development and positively contributes to society.")
@@ -177,7 +177,7 @@ struct SafeguardingView: View {
 
     var body: some View {
         Screen(title: "Safeguarding") {
-            PageTitle(eyebrow: "Safeguarding", title: "Everyone deserves to feel safe here",
+            PageTitle(title: "Everyone deserves to feel safe here",
                       subtitle: "We are committed to protecting the welfare of every child and adult who learns, worships or volunteers with us.")
             VStack(alignment: .leading, spacing: 14) {
                 SectionTitle("Raising a concern")
@@ -195,12 +195,12 @@ struct SafeguardingView: View {
             VStack(alignment: .leading, spacing: 8) {
                 SectionTitle("Get help now")
                 RowList {
-                    ExternalRow(title: "Emergency", icon: "phone.fill", url: "tel:999", subtitle: "999")
-                    ExternalRow(title: "Bromley Children’s Social Care", icon: "phone", url: "tel:02084617373",
+                    ExternalRow(title: "Emergency", url: "tel:999", subtitle: "999")
+                    ExternalRow(title: "Bromley Children’s Social Care", url: "tel:02084617373",
                                 subtitle: "020 8461 7373 · out of hours 0300 303 8671")
-                    ExternalRow(title: "NSPCC helpline", icon: "phone", url: "tel:08088005000", subtitle: "0808 800 5000")
-                    ExternalRow(title: "Childline", icon: "phone", url: "tel:08001111", subtitle: "0800 1111")
-                    ExternalRow(title: "Email the Safeguarding Officer", icon: "envelope",
+                    ExternalRow(title: "NSPCC helpline", url: "tel:08088005000", subtitle: "0808 800 5000")
+                    ExternalRow(title: "Childline", url: "tel:08001111", subtitle: "0800 1111")
+                    ExternalRow(title: "Email the Safeguarding Officer",
                                 url: "mailto:\(Site.email)?subject=Safeguarding", subtitle: "Marked “Safeguarding”")
                 }
             }
@@ -213,9 +213,9 @@ struct SafeguardingView: View {
 struct PoliciesView: View {
     var body: some View {
         Screen(title: "Policies") {
-            PageTitle(eyebrow: "Governance", title: "How we keep our community safe and accountable")
+            PageTitle(title: "How we keep our community safe and accountable")
             RowList { ForEach(Content.policies) { InfoRow(title: $0.title, text: $0.summary) } }
-            RowList { ExternalRow(title: "Read the full policies", icon: "doc.text", url: Site.page("/policies")) }
+            RowList { ExternalRow(title: "Read the full policies", url: Site.page("/policies")) }
         }
     }
 }
@@ -223,13 +223,13 @@ struct PoliciesView: View {
 struct ContactView: View {
     var body: some View {
         Screen(title: "Contact") {
-            PageTitle(eyebrow: "Contact", title: "We would be pleased to hear from you",
+            PageTitle(title: "We would be pleased to hear from you",
                       subtitle: "Ask about prayer locations, events, a first visit or community support.")
             RowList {
-                ExternalRow(title: "Call us", icon: "phone", url: "tel:\(Site.phone)", subtitle: Site.phoneDisplay)
-                ExternalRow(title: "Email", icon: "envelope", url: "mailto:\(Site.email)", subtitle: Site.email)
-                ExternalRow(title: "Join the WhatsApp community", icon: "bubble.left.and.bubble.right", url: Site.whatsapp)
-                ExternalRow(title: "Send a message on the website", icon: "square.and.pencil", url: Site.page("/contact"))
+                ExternalRow(title: "Call us", url: "tel:\(Site.phone)", subtitle: Site.phoneDisplay)
+                ExternalRow(title: "Email", url: "mailto:\(Site.email)", subtitle: Site.email)
+                ExternalRow(title: "Join the WhatsApp community", url: Site.whatsapp)
+                ExternalRow(title: "Send a message on the website", url: Site.page("/contact"))
             }
             VStack(alignment: .leading, spacing: 8) {
                 SectionTitle("Temporary venues")
@@ -239,10 +239,10 @@ struct ContactView: View {
             VStack(alignment: .leading, spacing: 8) {
                 SectionTitle("Follow us")
                 RowList {
-                    ExternalRow(title: "YouTube", icon: "play.rectangle", url: Site.youtube)
-                    ExternalRow(title: "Instagram", icon: "camera", url: Site.instagram)
-                    ExternalRow(title: "Facebook", icon: "person.2", url: Site.facebook)
-                    ExternalRow(title: "X", icon: "at", url: Site.twitter)
+                    ExternalRow(title: "YouTube", url: Site.youtube)
+                    ExternalRow(title: "Instagram", url: Site.instagram)
+                    ExternalRow(title: "Facebook", url: Site.facebook)
+                    ExternalRow(title: "X", url: Site.twitter)
                 }
             }
             Text("Bromley Islamic Centre Ltd · Company number 15967694 · Registered in England and Wales")

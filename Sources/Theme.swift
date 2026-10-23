@@ -75,13 +75,13 @@ struct Screen<Content: View>: View {
     }
 }
 
+/// Large serif page title with an optional plain line under it. No kicker above.
 struct PageTitle: View {
-    let eyebrow: String, title: String
+    let title: String
     var subtitle: String? = nil
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Eyebrow(text: eyebrow)
-            Text(title).font(.display(34, weight: .semibold, relativeTo: .largeTitle)).foregroundStyle(Theme.textPrimary)
+            Text(title).font(.display(36, weight: .semibold, relativeTo: .largeTitle)).foregroundStyle(Theme.textPrimary)
                 .accessibilityAddTraits(.isHeader)
             if let subtitle { Text(subtitle).font(.body(17)).foregroundStyle(Theme.textSecondary) }
         }

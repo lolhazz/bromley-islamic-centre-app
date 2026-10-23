@@ -9,16 +9,16 @@ struct EventsView: View {
     var body: some View {
         NavigationStack {
             Screen {
-                PageTitle(eyebrow: "Community & events", title: "What’s on",
+                PageTitle(title: "What’s on",
                           subtitle: "Gather, learn and grow together.")
                 if let featured { featuredCard(featured) }
                 announcements
                 comingUp
                 FeedStatus(config: config)
                 RowList {
-                    ExternalRow(title: "Join the WhatsApp community", icon: "bubble.left.and.bubble.right",
+                    ExternalRow(title: "Join the WhatsApp community",
                                 url: Site.whatsapp, subtitle: "Event, prayer and venue announcements")
-                    ExternalRow(title: "Khutbahs and talks", icon: "play.rectangle", url: Site.page("/videos"),
+                    ExternalRow(title: "Khutbahs and talks", url: Site.page("/videos"),
                                 subtitle: "Video library and live Jumu’ah")
                 }
             }
