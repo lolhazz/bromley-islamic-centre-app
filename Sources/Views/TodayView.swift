@@ -1,7 +1,6 @@
 import SwiftUI
 
 struct TodayView: View {
-    @State private var showAlerts = false
     @EnvironmentObject private var config: ConfigStore
     @Environment(\.dynamicTypeSize) private var typeSize
 
@@ -15,14 +14,16 @@ struct TodayView: View {
         let today = PrayerCalculator.schedule(for: now)
         let tomorrow = PrayerCalculator.schedule(for: PrayerCalculator.tomorrow(after: today.date))
         let (state, current) = NextPrayer.resolve(now: now, schedule: today, tomorrow: tomorrow)
-        let highlight = current.adhan < tomorrow.date ? current : nil
+        let onTomorrow = current.adhan >= tomorrow.date
+        let highlight = onTomorrow ? nil : current
 
         return NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     header(now: now)
-                    hero(state: state)
-                    venueNote
+                    hero(state: state, tomorrow: onTomorrow)
+                    Text(config.venueBanner)
+                        .font(.body(14, relativeTo: .subheadline)).foregroundStyle(Theme.textSecondary)
                     ramadanCard(today: today, now: now)
                     prayerList(today: today, highlight: highlight)
                     jumuah(now: now)
@@ -35,7 +36,6 @@ struct TodayView: View {
             .background(ScreenBackground())
             .toolbar(.hidden, for: .navigationBar)
         }
-        .sheet(isPresented: $showAlerts) { AlertsView() }
     }
 
     // MARK: Header
@@ -45,20 +45,20 @@ struct TodayView: View {
             .renderingMode(.template)
             .resizable().scaledToFit()
             .foregroundStyle(Theme.textPrimary)
-            .frame(width: 56, height: 56)
+            .frame(width: 52, height: 52)
             .accessibilityLabel("Bromley Islamic Centre")
-        let bell = Button { showAlerts = true } label: {
-            Image(systemName: "bell.badge").font(.title3).foregroundStyle(Theme.accent)
+        let bell = NavigationLink { AlertsView() } label: {
+            Image(systemName: "bell").font(.title3).foregroundStyle(Theme.textPrimary)
                 .frame(minWidth: 44, minHeight: 44)
         }
         .accessibilityLabel("Prayer alerts")
         let dates = VStack(alignment: .leading, spacing: 2) {
-            Eyebrow(text: "Today in Bromley")
             Text(now.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: "en_GB"))))
-                .font(.display(22, weight: .medium))
+                .font(.display(28, weight: .semibold, relativeTo: .title))
                 .foregroundStyle(Theme.textPrimary)
+                .accessibilityAddTraits(.isHeader)
             Text(Ramadan.hijriString(for: now))
-                .font(.body(13, relativeTo: .footnote)).foregroundStyle(Theme.textSecondary)
+                .font(.body(14, relativeTo: .footnote)).foregroundStyle(Theme.textSecondary)
         }
         return Group {
             if typeSize.isAccessibilitySize {
@@ -72,36 +72,30 @@ struct TodayView: View {
         }
     }
 
-    // MARK: Hero
+    // MARK: Hero (name first, then the time left)
 
-    private func hero(state: NextPrayer) -> some View {
-        let model: (eyebrow: String, big: String, caption: String, entry: PrayerEntry, spoken: String) = {
+    private func hero(state: NextPrayer, tomorrow: Bool) -> some View {
+        let model: (status: String, entry: PrayerEntry, spoken: String) = {
+            let day = tomorrow ? "Tomorrow, " : ""
             switch state {
             case let .upcoming(e, s):
-                return ("Next · \(e.prayer.rawValue)", TimeFormat.countdown(s), "until adhan", e,
-                        "Next prayer \(e.prayer.rawValue). Adhan in \(TimeFormat.spoken(s)).")
+                return ("\(day)adhan in \(TimeFormat.countdown(s))", e, "Next prayer \(e.prayer.rawValue). \(tomorrow ? "Tomorrow, " : "")Adhan in \(TimeFormat.spoken(s)).")
             case let .iqamahSoon(e, s):
-                return (e.prayer.rawValue, TimeFormat.countdown(s), "until jama’ah", e,
-                        "\(e.prayer.rawValue). Jama’ah in \(TimeFormat.spoken(s)).")
+                return ("Jama’ah in \(TimeFormat.countdown(s))", e, "\(e.prayer.rawValue). Jama’ah in \(TimeFormat.spoken(s)).")
             case let .inProgress(e):
-                return (e.prayer.rawValue, "Now", "jama’ah in progress", e, "\(e.prayer.rawValue). Jama’ah in progress.")
+                return ("Jama’ah in progress", e, "\(e.prayer.rawValue). Jama’ah in progress.")
             }
         }()
         return HeroCard {
-            VStack(alignment: .leading, spacing: 6) {
-                Text(model.eyebrow.uppercased())
-                    .font(.body(12, weight: .bold)).tracking(1.6).foregroundStyle(Theme.onHeroAccent)
-                Text(model.big)
-                    .font(.display(52, weight: .semibold, relativeTo: .largeTitle))
+            VStack(alignment: .leading, spacing: 4) {
+                Text(model.entry.prayer.rawValue)
+                    .font(.display(56, weight: .semibold, relativeTo: .largeTitle))
                     .foregroundStyle(Theme.onHero)
-                    .minimumScaleFactor(0.6).lineLimit(1)
-                Text(model.caption)
-                    .font(.body(15, relativeTo: .subheadline)).foregroundStyle(Theme.onHeroSecondary)
-                Spacer().frame(height: 10)
-                ViewThatFits(in: .horizontal) {
-                    HStack(spacing: 24) { heroTime("Adhan", model.entry.adhan, Theme.onHero); heroTime("Iqamah", model.entry.iqamah, Theme.onHeroAccent) }
-                    VStack(alignment: .leading, spacing: 8) { heroTime("Adhan", model.entry.adhan, Theme.onHero); heroTime("Iqamah", model.entry.iqamah, Theme.onHeroAccent) }
-                }
+                Text(model.status)
+                    .font(.body(20, weight: .medium, relativeTo: .title3)).foregroundStyle(Theme.onHeroAccent)
+                    .padding(.bottom, 12)
+                heroTime("Adhan", model.entry.adhan, Theme.onHero)
+                heroTime("Iqamah", model.entry.iqamah, Theme.onHeroAccent)
             }
         }
         .accessibilityElement(children: .ignore)
@@ -111,20 +105,13 @@ struct TodayView: View {
     }
 
     private func heroTime(_ label: String, _ date: Date, _ color: Color) -> some View {
-        VStack(alignment: .leading, spacing: 1) {
-            Text(label.uppercased()).font(.body(11, weight: .medium, relativeTo: .caption)).tracking(1.1).foregroundStyle(Theme.onHeroSecondary)
+        HStack {
+            Text(label).font(.body(16, relativeTo: .callout)).foregroundStyle(Theme.onHeroSecondary)
+            Spacer(minLength: 12)
             Text(TimeFormat.clock(date)).font(.body(20, weight: .bold, relativeTo: .title3)).monospacedDigit().foregroundStyle(color)
         }
-    }
-
-    // MARK: Venue note
-
-    private var venueNote: some View {
-        Label {
-            Text(config.venueBanner).font(.body(14, relativeTo: .subheadline)).foregroundStyle(Theme.textSecondary)
-        } icon: {
-            Image(systemName: "mappin.and.ellipse").foregroundStyle(Theme.accent)
-        }
+        .padding(.vertical, 3)
+        .frame(maxWidth: 320)
     }
 
     // MARK: Ramadan
@@ -141,7 +128,7 @@ struct TodayView: View {
                     SectionTitle("Ramadan is coming")
                     Text("About \(d) day\(d == 1 ? "" : "s") to go").font(.body(16, weight: .medium)).foregroundStyle(Theme.textPrimary)
                 case let .during(day):
-                    SectionTitle("Ramadan · day \(day)")
+                    SectionTitle("Ramadan, day \(day)")
                     ViewThatFits(in: .horizontal) {
                         HStack(alignment: .top) { ramadanTime("Imsak", imsak); ramadanTime("Suhoor ends", fajr); ramadanTime("Iftar", maghrib) }
                         VStack(alignment: .leading, spacing: 10) { ramadanTime("Imsak", imsak); ramadanTime("Suhoor ends", fajr); ramadanTime("Iftar", maghrib) }
@@ -153,7 +140,7 @@ struct TodayView: View {
                 Text("The start of Ramadan follows the moon and may differ by a day.")
                     .font(.body(12, relativeTo: .caption)).foregroundStyle(Theme.textSecondary)
             }
-            .surfaceCard(stroke: Theme.accent.opacity(0.5))
+            .surfaceCard()
         }
     }
 
@@ -169,29 +156,35 @@ struct TodayView: View {
 
     // MARK: Prayer list
 
+    private func columnHeader(_ a: String, _ b: String) -> some View {
+        HStack {
+            Spacer()
+            Text(a).frame(width: 92, alignment: .trailing)
+            Text(b).frame(width: 92, alignment: .trailing)
+        }
+        .font(.body(13, weight: .medium, relativeTo: .caption))
+        .foregroundStyle(Theme.textSecondary)
+        .padding(.horizontal, 16)
+        .accessibilityHidden(true)
+    }
+
+    private func listContainer<C: View>(@ViewBuilder _ content: () -> C) -> some View {
+        VStack(spacing: 0) { content() }
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(Theme.stroke))
+            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+    }
+
     private func prayerList(today: DaySchedule, highlight: PrayerEntry?) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            if !typeSize.isAccessibilitySize {
-                HStack {
-                    Spacer()
-                    Text("Adhan").frame(width: 92, alignment: .trailing)
-                    Text("Iqamah").frame(width: 92, alignment: .trailing)
-                }
-                .font(.body(12, weight: .medium, relativeTo: .caption)).tracking(0.8).textCase(.uppercase)
-                .foregroundStyle(Theme.textSecondary)
-                .padding(.horizontal, 16)
-                .accessibilityHidden(true)
-            }
-            VStack(spacing: 0) {
+            if !typeSize.isAccessibilitySize { columnHeader("Adhan", "Iqamah") }
+            listContainer {
                 ForEach(Array(today.entries.enumerated()), id: \.element.id) { idx, e in
                     prayerRow(e, active: e.prayer == highlight?.prayer)
                     if idx == 0 { sunriseRow(today.sunrise) }
                     if idx < today.entries.count - 1 { Hairline().padding(.horizontal, 16) }
                 }
             }
-            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(Theme.stroke))
-            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         }
     }
 
@@ -208,7 +201,7 @@ struct TodayView: View {
                 HStack {
                     Text(e.prayer.rawValue).font(.body(18, weight: active ? .bold : .medium, relativeTo: .headline))
                     Spacer()
-                    Text(TimeFormat.clock(e.adhan)).font(.body(18, weight: .medium, relativeTo: .headline)).monospacedDigit()
+                    Text(TimeFormat.clock(e.adhan)).font(.body(18, weight: active ? .bold : .medium, relativeTo: .headline)).monospacedDigit()
                         .frame(width: 92, alignment: .trailing)
                     Text(TimeFormat.clock(e.iqamah)).font(.body(18, weight: .bold, relativeTo: .headline)).monospacedDigit()
                         .foregroundStyle(Theme.accent).frame(width: 92, alignment: .trailing)
@@ -217,8 +210,7 @@ struct TodayView: View {
         }
         .foregroundStyle(Theme.textPrimary)
         .padding(.vertical, 16).padding(.horizontal, 16)
-        .background(active ? Theme.accent.opacity(0.10) : .clear)
-        .overlay(alignment: .leading) { if active { Rectangle().fill(Theme.accent).frame(width: 4) } }
+        .background(active ? Theme.accent.opacity(0.12) : .clear)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(e.prayer.rawValue)
         .accessibilityValue("Adhan \(TimeFormat.clock(e.adhan)). Iqamah \(TimeFormat.clock(e.iqamah)).")
@@ -229,7 +221,6 @@ struct TodayView: View {
         VStack(spacing: 0) {
             Hairline().padding(.horizontal, 16)
             HStack {
-                Image(systemName: "sunrise").foregroundStyle(Theme.accent).accessibilityHidden(true)
                 Text("Sunrise").font(.body(15, relativeTo: .subheadline)).foregroundStyle(Theme.textSecondary)
                 Spacer()
                 Text(TimeFormat.clock(sunrise)).font(.body(15, weight: .medium, relativeTo: .subheadline)).monospacedDigit()
@@ -241,40 +232,47 @@ struct TodayView: View {
         }
     }
 
-    // MARK: Jumu'ah
+    // MARK: Jumu'ah (same list style as the prayers)
 
     private func jumuah(now: Date) -> some View {
         let isFriday = Calendar.current.component(.weekday, from: now) == 6
-        return VStack(alignment: .leading, spacing: 12) {
+        return VStack(alignment: .leading, spacing: 10) {
             SectionTitle(isFriday ? "Jumu’ah today" : "Jumu’ah on Friday")
-            ViewThatFits(in: .horizontal) {
-                HStack(alignment: .top, spacing: 12) { ForEach(config.jumuah) { jumuahCard($0, highlight: isFriday) } }
-                VStack(spacing: 12) { ForEach(config.jumuah) { jumuahCard($0, highlight: isFriday) } }
+            if !typeSize.isAccessibilitySize { columnHeader("Khutbah", "Jama’ah") }
+            listContainer {
+                ForEach(Array(config.jumuah.enumerated()), id: \.element.id) { idx, slot in
+                    jumuahRow(slot)
+                    if idx < config.jumuah.count - 1 { Hairline().padding(.horizontal, 16) }
+                }
             }
         }
     }
 
-    private func jumuahCard(_ slot: JumuahSlot, highlight: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(slot.label).font(.display(20, weight: .medium, relativeTo: .title3)).foregroundStyle(Theme.textPrimary)
-            jumuahLine("Khutbah", slot.khutbah)
-            jumuahLine("Jama’ah", slot.jamaah, bold: true)
-            if let v = slot.venue, !v.isEmpty { Text(v).font(.body(13, relativeTo: .footnote)).foregroundStyle(Theme.textSecondary) }
-            if let n = slot.note, !n.isEmpty { Text(n).font(.body(13, relativeTo: .footnote)).italic().foregroundStyle(Theme.accent) }
+    private func jumuahRow(_ slot: JumuahSlot) -> some View {
+        let extras = [slot.venue, slot.note].compactMap { $0 }.filter { !$0.isEmpty }
+        return VStack(alignment: .leading, spacing: 4) {
+            if typeSize.isAccessibilitySize {
+                Text(slot.label).font(.body(20, weight: .bold, relativeTo: .title3))
+                Text("Khutbah \(slot.khutbah)").font(.body(18)).monospacedDigit()
+                Text("Jama’ah \(slot.jamaah)").font(.body(18, weight: .bold)).monospacedDigit().foregroundStyle(Theme.accent)
+            } else {
+                HStack {
+                    Text(slot.label).font(.body(18, weight: .medium, relativeTo: .headline))
+                    Spacer()
+                    Text(slot.khutbah).font(.body(18, weight: .medium, relativeTo: .headline)).monospacedDigit()
+                        .frame(width: 92, alignment: .trailing)
+                    Text(slot.jamaah).font(.body(18, weight: .bold, relativeTo: .headline)).monospacedDigit()
+                        .foregroundStyle(Theme.accent).frame(width: 92, alignment: .trailing)
+                }
+            }
+            ForEach(extras, id: \.self) { Text($0).font(.body(13, relativeTo: .footnote)).foregroundStyle(Theme.textSecondary) }
         }
-        .surfaceCard(stroke: highlight ? Theme.accent.opacity(0.6) : Theme.stroke)
+        .foregroundStyle(Theme.textPrimary)
+        .padding(.vertical, 16).padding(.horizontal, 16)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(slot.label)
-        .accessibilityValue("Khutbah \(slot.khutbah). Jama’ah \(slot.jamaah).\([slot.venue, slot.note].compactMap { $0 }.filter { !$0.isEmpty }.map { " \($0)." }.joined())")
-    }
-
-    private func jumuahLine(_ k: String, _ v: String, bold: Bool = false) -> some View {
-        HStack {
-            Text(k).font(.body(14, relativeTo: .subheadline)).foregroundStyle(Theme.textSecondary)
-            Spacer(minLength: 12)
-            Text(v).font(.body(16, weight: bold ? .bold : .medium, relativeTo: .body)).monospacedDigit()
-                .foregroundStyle(bold ? Theme.accent : Theme.textPrimary)
-        }
+        .accessibilityValue("Khutbah \(slot.khutbah). Jama’ah \(slot.jamaah).\(extras.map { " \($0)." }.joined())")
     }
 
     // MARK: Footnote

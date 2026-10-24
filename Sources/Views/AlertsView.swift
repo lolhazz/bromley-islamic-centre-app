@@ -2,11 +2,9 @@ import SwiftUI
 
 struct AlertsView: View {
     @EnvironmentObject var alerts: AlertSettings
-    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        NavigationStack {
-            Form {
+        Form {
                 Section {
                     ForEach(Prayer.allCases) { p in
                         Toggle(p.rawValue, isOn: Binding(
@@ -45,10 +43,8 @@ struct AlertsView: View {
                         .font(.footnote).foregroundStyle(.secondary)
                 }
             }
-            .font(.body(17))
-            .navigationTitle("Prayer alerts")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
-        }
+        .font(.body(17))
+        .navigationTitle("Prayer alerts")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
