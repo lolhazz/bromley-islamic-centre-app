@@ -44,16 +44,31 @@ struct BromleyApp: App {
 }
 
 struct RootView: View {
+    @State private var tab = DebugRoute.tab
+
     var body: some View {
-        TabView {
+        TabView(selection: $tab) {
             TodayView()
-                .tabItem { Label("Prayer", systemImage: "clock") }
+                .tabItem { Label("Prayer", systemImage: "clock") }.tag(0)
             QiblaView()
-                .tabItem { Label("Qibla", systemImage: "location.north.line") }
+                .tabItem { Label("Qibla", systemImage: "location.north.line") }.tag(1)
             EventsView()
-                .tabItem { Label("What’s on", systemImage: "calendar") }
+                .tabItem { Label("What’s on", systemImage: "calendar") }.tag(2)
             CentreView()
-                .tabItem { Label("Centre", systemImage: "building.columns") }
+                .tabItem { Label("Centre", systemImage: "building.columns") }.tag(3)
         }
     }
+}
+
+/// Debug-only launch arguments to jump straight to a screen when checking the UI:
+/// `-tab 3 -centre services` (tabs: 0 Prayer, 1 Qibla, 2 What's on, 3 Centre).
+enum DebugRoute {
+    static func value(after flag: String) -> String? {
+        #if DEBUG
+        let args = ProcessInfo.processInfo.arguments
+        if let i = args.firstIndex(of: flag), i + 1 < args.count { return args[i + 1] }
+        #endif
+        return nil
+    }
+    static var tab: Int { value(after: "-tab").flatMap(Int.init) ?? 0 }
 }

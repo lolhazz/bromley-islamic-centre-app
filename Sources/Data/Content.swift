@@ -43,7 +43,6 @@ struct JumuahSlot: Identifiable, Codable {
 
 struct ServiceItem: Identifiable {
     let id = UUID()
-    let icon: String
     let title: String
     let summary: String
     let points: [String]
@@ -105,27 +104,27 @@ enum Content {
     ]
 
     static let services: [ServiceItem] = [
-        ServiceItem(icon: "heart.text.square", title: "Marriage services",
+        ServiceItem(title: "Marriage services",
                     summary: "Nikah ceremonies, applications and marriage counselling.",
                     points: ["Photo ID for groom, bride, wali and two witnesses", "The bride’s wali takes part", "A nikah may not by itself be legally recognised in England and Wales, so also arrange a civil marriage", "Submitting is an application, not a confirmed booking"],
                     path: "/services?tab=marriage"),
-        ServiceItem(icon: "figure.2.and.child.holdinghands", title: "NextGen youth club",
+        ServiceItem(title: "NextGen youth club",
                     summary: "Youth club, activities, outings and mentoring.",
                     points: ["Sports, games and social activities", "Faith-based learning circles", "Positive role models and mentoring", "Run in line with our safeguarding policy"],
                     path: "/services?tab=nextgen"),
-        ServiceItem(icon: "ear", title: "Counselling",
+        ServiceItem(title: "Counselling",
                     summary: "Personal, family and spiritual support in confidence.",
                     points: ["Personal and family matters", "Spiritual guidance", "Signposting to specialist services", "Strictly confidential"],
                     path: "/services?tab=counselling"),
-        ServiceItem(icon: "scale.3d", title: "Mediation & arbitration",
+        ServiceItem(title: "Mediation & arbitration",
                     summary: "Resolving disputes fairly between partners and families.",
                     points: ["Business partner disputes", "Family and community disagreements", "A neutral, faith-grounded process"],
                     path: "/services?tab=mediation"),
-        ServiceItem(icon: "book.closed", title: "Weekend Madrasah",
+        ServiceItem(title: "Weekend Madrasah",
                     summary: "Sundays for boys and girls aged 5 to 17.",
                     points: ["Registration 2:45 pm, finish 5:00 pm", "Quran with Tajweed, Salah, Islamic studies, Arabic", "Safeguarding and DBS-checked teachers"],
                     path: "/madrasah"),
-        ServiceItem(icon: "sparkles", title: "Discover Islam",
+        ServiceItem(title: "Discover Islam",
                     summary: "Questions are always welcome.",
                     points: ["Ask anything, in private", "Free English Quran on request", "New Muslim care and one-to-one mentoring"],
                     path: "/discover-islam"),
