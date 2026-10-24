@@ -72,7 +72,7 @@ struct QiblaView: View {
     var body: some View {
         NavigationStack {
             Screen {
-                PageTitle(eyebrow: "Qibla", title: "Direction of Makkah")
+                PageTitle(title: "Direction of Makkah")
                 compass
                     .frame(maxWidth: .infinity)
                 readout

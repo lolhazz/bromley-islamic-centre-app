@@ -19,16 +19,9 @@ struct StarPattern: View {
     }
 }
 
-/// Page background: flat adaptive colour with a faint star texture.
+/// Page background: flat adaptive colour. The star motif is kept for the few places that earn it.
 struct ScreenBackground: View {
-    var body: some View {
-        ZStack {
-            Theme.bg
-            StarPattern()
-                .foregroundStyle(Theme.accent.opacity(0.045))
-        }
-        .ignoresSafeArea()
-    }
+    var body: some View { Theme.bg.ignoresSafeArea() }
 }
 
 /// Dark teal hero block with a star watermark in the corner. Always dark, in light and dark appearance.
@@ -62,16 +55,13 @@ struct Hairline: View {
     var body: some View { Rectangle().fill(Theme.divider).frame(height: 1).accessibilityHidden(true) }
 }
 
-/// Plain list row: icon, title, optional subtitle, chevron or external arrow. No box.
+/// Plain list row: title, optional subtitle, chevron or external arrow. No box, no leading icon.
 struct ListRow: View {
     let title: String
     var subtitle: String? = nil
-    let icon: String
     var external = false
     var body: some View {
-        HStack(spacing: 14) {
-            Image(systemName: icon).font(.title3).foregroundStyle(Theme.accent).frame(width: 30)
-                .accessibilityHidden(true)
+        HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title).font(.body(17, weight: .medium)).foregroundStyle(Theme.textPrimary)
                 if let subtitle { Text(subtitle).font(.body(14, relativeTo: .subheadline)).foregroundStyle(Theme.textSecondary) }
@@ -88,10 +78,10 @@ struct ListRow: View {
 
 /// External link row (opens in Safari / Phone / Mail).
 struct ExternalRow: View {
-    let title: String, icon: String, url: String
+    let title: String, url: String
     var subtitle: String? = nil
     var body: some View {
-        Link(destination: URL(string: url)!) { ListRow(title: title, subtitle: subtitle, icon: icon, external: true) }
+        Link(destination: URL(string: url)!) { ListRow(title: title, subtitle: subtitle, external: true) }
             .accessibilityHint("Opens outside the app")
     }
 }
@@ -141,7 +131,7 @@ struct InfoRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title).font(.body(17, weight: .bold)).foregroundStyle(Theme.textPrimary)
-            if let detail { Text(detail).font(.body(14, weight: .medium, relativeTo: .subheadline)).foregroundStyle(Theme.accent) }
+            if let detail { Text(detail).font(.body(14, weight: .medium, relativeTo: .subheadline)).foregroundStyle(Theme.textSecondary) }
             if let text { Text(text).font(.body(15, relativeTo: .callout)).foregroundStyle(Theme.textSecondary) }
         }
         .padding(.vertical, 14)
