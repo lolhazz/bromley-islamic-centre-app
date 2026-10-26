@@ -72,7 +72,7 @@ struct QiblaView: View {
     var body: some View {
         NavigationStack {
             Screen {
-                PageTitle(title: "Direction of Makkah")
+                PageTitle(title: "Qibla", subtitle: "The direction of Makkah")
                 compass
                     .frame(maxWidth: .infinity)
                 readout
@@ -129,10 +129,10 @@ struct QiblaView: View {
             // Makkah marker at its bearing on the dial, kept upright on screen.
             ZStack {
                 Capsule().fill(Theme.accent).frame(width: 4, height: r * 0.5).offset(y: -r * 0.25)
-                Image(systemName: "moon.stars.fill")
-                    .font(.system(size: 22)).foregroundStyle(Theme.bg)
-                    .frame(width: 44, height: 44)
-                    .background(Theme.accent, in: Circle())
+                KaabaMark()
+                    .padding(9)
+                    .background(Theme.bg, in: Circle())
+                    .overlay(Circle().stroke(Theme.accent, lineWidth: 2))
                     .rotationEffect(.degrees((model.heading ?? 0) - model.qiblaBearing))
                     .offset(y: -r * 0.62)
             }
@@ -180,5 +180,17 @@ struct QiblaView: View {
         let b = Int(model.qiblaBearing.rounded())
         guard let turn = model.turn else { return "Makkah is \(b) degrees from north." }
         return aligned ? "You are facing Makkah." : "Makkah is \(b) degrees from north. Turn \(Int(abs(turn).rounded())) degrees to the \(turn > 0 ? "right" : "left")."
+    }
+}
+
+/// A small drawn Kaaba: dark cube with a gold band. Marks Makkah on the dial.
+private struct KaabaMark: View {
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 3, style: .continuous).fill(Color(red: 0.07, green: 0.07, blue: 0.08))
+            Rectangle().fill(Theme.accent).frame(height: 4).offset(y: -5)
+        }
+        .frame(width: 26, height: 26)
+        .accessibilityHidden(true)
     }
 }
