@@ -6,3 +6,5 @@ xcuserdata/
 node_modules/
 .vercel/
 build-device/
+dist/
+build-ipa/
