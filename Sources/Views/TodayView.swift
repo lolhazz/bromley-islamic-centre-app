@@ -79,9 +79,9 @@ struct TodayView: View {
             let day = tomorrow ? "Tomorrow, " : ""
             switch state {
             case let .upcoming(e, s):
-                return ("\(day)adhan in \(TimeFormat.countdown(s))", e, "Next prayer \(e.prayer.rawValue). \(tomorrow ? "Tomorrow, " : "")Adhan in \(TimeFormat.spoken(s)).")
+                return ("\(day)adhan in \(TimeFormat.countdown(s).replacingOccurrences(of: " ", with: "\u{00A0}"))", e, "Next prayer \(e.prayer.rawValue). \(tomorrow ? "Tomorrow, " : "")Adhan in \(TimeFormat.spoken(s)).")
             case let .iqamahSoon(e, s):
-                return ("Jama’ah in \(TimeFormat.countdown(s))", e, "\(e.prayer.rawValue). Jama’ah in \(TimeFormat.spoken(s)).")
+                return ("Jama’ah in \(TimeFormat.countdown(s).replacingOccurrences(of: " ", with: "\u{00A0}"))", e, "\(e.prayer.rawValue). Jama’ah in \(TimeFormat.spoken(s)).")
             case let .inProgress(e):
                 return ("Jama’ah in progress", e, "\(e.prayer.rawValue). Jama’ah in progress.")
             }
@@ -105,13 +105,20 @@ struct TodayView: View {
     }
 
     private func heroTime(_ label: String, _ date: Date, _ color: Color) -> some View {
-        HStack {
-            Text(label).font(.body(16, relativeTo: .callout)).foregroundStyle(Theme.onHeroSecondary)
-            Spacer(minLength: 12)
-            Text(TimeFormat.clock(date)).font(.body(20, weight: .bold, relativeTo: .title3)).monospacedDigit().foregroundStyle(color)
+        ViewThatFits(in: .horizontal) {
+            HStack {
+                Text(label).font(.body(16, relativeTo: .callout)).foregroundStyle(Theme.onHeroSecondary)
+                Spacer(minLength: 12)
+                Text(TimeFormat.clock(date)).font(.body(20, weight: .bold, relativeTo: .title3)).monospacedDigit().foregroundStyle(color)
+                    .lineLimit(1).fixedSize()
+            }
+            VStack(alignment: .leading, spacing: 0) {
+                Text(label).font(.body(16, relativeTo: .callout)).foregroundStyle(Theme.onHeroSecondary)
+                Text(TimeFormat.clock(date)).font(.body(20, weight: .bold, relativeTo: .title3)).monospacedDigit().foregroundStyle(color)
+            }
         }
         .padding(.vertical, 3)
-        .frame(maxWidth: 320)
+        .frame(maxWidth: 320, alignment: .leading)
     }
 
     // MARK: Ramadan
