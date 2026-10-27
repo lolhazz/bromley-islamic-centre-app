@@ -6,8 +6,21 @@ struct TodayView: View {
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 15)) { ctx in
-            content(now: ctx.date)
+            content(now: Self.debugNow(ctx.date))
         }
+    }
+
+    /// DEBUG aid: `-skyHour 7.5` launches with the clock set to that London hour today, to check the sky at any time.
+    private static func debugNow(_ real: Date) -> Date {
+        #if DEBUG
+        if let h = UserDefaults.standard.string(forKey: "skyHour").flatMap(Double.init) {
+            var cal = Calendar(identifier: .gregorian)
+            cal.timeZone = TimeZone(identifier: "Europe/London")!
+            let midnight = cal.startOfDay(for: real)
+            return midnight.addingTimeInterval(h * 3600)
+        }
+        #endif
+        return real
     }
 
     private func content(now: Date) -> some View {
@@ -21,7 +34,7 @@ struct TodayView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     header(now: now)
-                    hero(state: state, tomorrow: onTomorrow)
+                    hero(state: state, tomorrow: onTomorrow, sky: DaySky.at(now, today: today, tomorrow: tomorrow), today: today)
                     Text(config.venueBanner)
                         .font(.body(14, relativeTo: .subheadline)).foregroundStyle(Theme.textSecondary)
                     ramadanCard(today: today, now: now)
@@ -74,28 +87,32 @@ struct TodayView: View {
 
     // MARK: Hero (name first, then the time left)
 
-    private func hero(state: NextPrayer, tomorrow: Bool) -> some View {
+    private func hero(state: NextPrayer, tomorrow: Bool, sky: DaySky, today: DaySchedule) -> some View {
         let model: (status: String, entry: PrayerEntry, spoken: String) = {
             let day = tomorrow ? "Tomorrow, " : ""
             switch state {
             case let .upcoming(e, s):
-                return ("\(day)adhan in \(TimeFormat.countdown(s).replacingOccurrences(of: " ", with: "\u{00A0}"))", e, "Next prayer \(e.prayer.rawValue). \(tomorrow ? "Tomorrow, " : "")Adhan in \(TimeFormat.spoken(s)).")
+                return ("\(day)\(tomorrow ? "adhan" : "Adhan") in \(TimeFormat.countdown(s).replacingOccurrences(of: " ", with: "\u{00A0}"))", e, "Next prayer \(e.prayer.rawValue). \(tomorrow ? "Tomorrow, " : "")Adhan in \(TimeFormat.spoken(s)).")
             case let .iqamahSoon(e, s):
                 return ("Jama’ah in \(TimeFormat.countdown(s).replacingOccurrences(of: " ", with: "\u{00A0}"))", e, "\(e.prayer.rawValue). Jama’ah in \(TimeFormat.spoken(s)).")
             case let .inProgress(e):
                 return ("Jama’ah in progress", e, "\(e.prayer.rawValue). Jama’ah in progress.")
             }
         }()
-        return HeroCard {
+        return HeroCard(sky: sky) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(model.entry.prayer.rawValue)
                     .font(.display(56, weight: .semibold, relativeTo: .largeTitle))
                     .foregroundStyle(Theme.onHero)
                 Text(model.status)
                     .font(.body(20, weight: .medium, relativeTo: .title3)).foregroundStyle(Theme.onHeroAccent)
+                    .contentTransition(.numericText())
+                    .animation(.snappy, value: model.status)
                     .padding(.bottom, 12)
                 heroTime("Adhan", model.entry.adhan, Theme.onHero)
                 heroTime("Iqamah", model.entry.iqamah, Theme.onHeroAccent)
+                SkyArc(sky: sky, sunrise: today.sunrise, maghrib: today.entries[3].adhan)
+                    .padding(.top, 16)
             }
         }
         .accessibilityElement(children: .ignore)

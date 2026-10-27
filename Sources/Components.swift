@@ -26,22 +26,37 @@ struct ScreenBackground: View {
 
 /// Dark teal hero block with a star watermark in the corner. Always dark, in light and dark appearance.
 struct HeroCard<Content: View>: View {
+    /// When set, the block is painted with the sky at this moment instead of flat teal.
+    var sky: DaySky? = nil
     @ViewBuilder var content: Content
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var turning = false
     var body: some View {
         content
             .padding(20)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background {
-                ZStack(alignment: .bottomTrailing) {
-                    Theme.hero
+                ZStack(alignment: sky == nil ? .bottomTrailing : .topTrailing) {
+                    if let sky {
+                        LinearGradient(colors: [sky.top.color, sky.bottom.color], startPoint: .top, endPoint: .bottom)
+                    } else {
+                        Theme.hero
+                    }
+                    // The two stars turn against each other, slowly. Still under Reduce Motion.
                     EightPointStar()
                         .stroke(Theme.onHeroAccent.opacity(0.22), lineWidth: 1.5)
                         .frame(width: 190, height: 190)
-                        .offset(x: 95, y: 95)
+                        .rotationEffect(.degrees(turning ? 360 : 0))
+                        .offset(x: 95, y: sky == nil ? 95 : -95)
                     EightPointStar()
                         .stroke(Theme.onHeroAccent.opacity(0.14), lineWidth: 1.5)
                         .frame(width: 130, height: 130)
-                        .offset(x: 70, y: 70)
+                        .rotationEffect(.degrees(turning ? -360 : 0))
+                        .offset(x: 70, y: sky == nil ? 70 : -70)
+                }
+                .onAppear {
+                    guard !reduceMotion else { return }
+                    withAnimation(.linear(duration: 180).repeatForever(autoreverses: false)) { turning = true }
                 }
                 .clipped()
                 .accessibilityHidden(true)
