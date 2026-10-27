@@ -52,7 +52,11 @@ enum PrayerCalculator {
     static func schedule(for day: Date) -> DaySchedule {
         let comps = london.dateComponents([.year, .month, .day], from: day)
         let midnight = london.date(from: comps)!
-        let tzHours = Double(london.timeZone.secondsFromGMT(for: midnight.addingTimeInterval(12 * 3600))) / 3600
+        // Anchor on UTC midnight: the solar times are UT hours, and local midnight is wrong by an hour
+        // on the two days a year when the clocks change (the day is 23 or 25 hours long).
+        var utc = Calendar(identifier: .gregorian)
+        utc.timeZone = TimeZone(identifier: "UTC")!
+        let utcMidnight = utc.date(from: comps)!
 
         // Julian day at 0h UT for that civil date
         let y = Double(comps.year!), m = Double(comps.month!), d = Double(comps.day!)
@@ -80,8 +84,7 @@ enum PrayerCalculator {
         let horizon = 0.833
 
         func date(_ utHours: Double, adjust minutes: Double = 0) -> Date {
-            let local = utHours + tzHours
-            return midnight.addingTimeInterval(local * 3600 + minutes * 60)
+            utcMidnight.addingTimeInterval(utHours * 3600 + minutes * 60)
         }
 
         let times: [(Prayer, Date)] = [
