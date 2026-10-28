@@ -12,7 +12,7 @@ struct CentreView: View {
             Screen {
                 PageTitle(title: "The centre")
                 mosqueFund
-                RowList {
+                RowList(stagger: true) {
                     row("Services", "Nikah, counselling, youth club, mediation", .services)
                     row("Volunteer", "Nine teams you can join", .volunteer)
                     row("Contact", "Call, email or WhatsApp", .contact)
@@ -69,7 +69,7 @@ struct CentreView: View {
 
     private func row(_ title: String, _ subtitle: String, _ route: CentreRoute) -> some View {
         NavigationLink(value: route) { ListRow(title: title, subtitle: subtitle) }
-            .buttonStyle(.plain)
+            .buttonStyle(RowPressStyle())
     }
 }
 

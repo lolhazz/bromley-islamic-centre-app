@@ -71,4 +71,24 @@ enum DebugRoute {
         return nil
     }
     static var tab: Int { value(after: "-tab").flatMap(Int.init) ?? 0 }
+
+    /// Pretend it is another moment: `-today 2026-10-21` (10:00 London that day), then `-skyHour 17.2` sets the hour.
+    static func now(_ real: Date) -> Date {
+        #if DEBUG
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "Europe/London")!
+        var day = real
+        if let t = value(after: "-today") {
+            let f = DateFormatter()
+            f.calendar = cal; f.timeZone = cal.timeZone; f.dateFormat = "yyyy-MM-dd"
+            if let d = f.date(from: t) { day = d.addingTimeInterval(10 * 3600) }
+        }
+        if let h = value(after: "-skyHour").flatMap(Double.init) {
+            return cal.startOfDay(for: day).addingTimeInterval(h * 3600)
+        }
+        return day
+        #else
+        return real
+        #endif
+    }
 }

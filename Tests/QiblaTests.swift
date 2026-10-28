@@ -38,3 +38,20 @@ struct QiblaTests {
         #expect(m.turn! > -180 && m.turn! <= 180)
     }
 }
+
+@MainActor
+@Suite("Qibla distance")
+struct QiblaDistanceTests {
+    @Test func distanceFromBromleyIsAbout4800Km() {
+        let d = QiblaModel().distanceKm
+        #expect(d > 4_700 && d < 4_900)
+    }
+
+    @Test func distanceFromKnownCities() {
+        let m = QiblaModel()
+        m.coordinate = CLLocationCoordinate2D(latitude: 40.7128, longitude: -74.0060)   // New York, about 10,300 km
+        #expect(m.distanceKm > 10_000 && m.distanceKm < 10_600)
+        m.coordinate = CLLocationCoordinate2D(latitude: 21.4225, longitude: 39.8262)    // at the Kaaba
+        #expect(m.distanceKm < 1)
+    }
+}
