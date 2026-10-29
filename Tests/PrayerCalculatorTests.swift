@@ -58,6 +58,22 @@ struct PrayerCalculatorTests {
         #expect(TestClock.hm(mon.entries[1].adhan) == "11:44")
     }
 
+    /// The day the clocks change is 25 or 23 hours long; times were an hour out when counted from local midnight.
+    @Test func clockChangeDaysAreNotAnHourOut() {
+        for (change, next) in [(TestClock.date(2026, 10, 25), TestClock.date(2026, 10, 26)),
+                               (TestClock.date(2027, 3, 28), TestClock.date(2027, 3, 29)),
+                               (TestClock.date(2027, 10, 31), TestClock.date(2027, 11, 1))] {
+            let a = PrayerCalculator.schedule(for: change), b = PrayerCalculator.schedule(for: next)
+            for (x, y) in zip(a.entries, b.entries) {
+                // The same prayer a day later is about 24 real hours on (the clock moves, the sun does not).
+                let drift = y.adhan.timeIntervalSince(x.adhan) - 24 * 3600
+                #expect(abs(drift) < 5 * 60, "\(x.prayer) on \(change) drifts \(drift / 60) min from the next day")
+            }
+        }
+        // 25 Oct 2026 Maghrib is about 16:46 GMT, not 15:46.
+        #expect(TestClock.hm(PrayerCalculator.schedule(for: TestClock.date(2026, 10, 25)).entries[3].adhan) == "16:46")
+    }
+
     @Test func midsummerAndMidwinterAreReasonable() {
         let summer = PrayerCalculator.schedule(for: TestClock.date(2026, 6, 21))
         let winter = PrayerCalculator.schedule(for: TestClock.date(2026, 12, 21))
