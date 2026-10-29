@@ -1,12 +1,8 @@
 # Bromley Islamic Centre app
 
-An iPhone app for Bromley Islamic Centre, written in SwiftUI (iOS 18).
+An iPhone app for Bromley Islamic Centre, written in SwiftUI for iOS 18.
 
-- Daily prayer times, next-prayer countdown and Qibla compass
-- Reminder alerts using local notifications, with extra alerts in Ramadan
-- Events and centre information
-- Home-screen and lock-screen widgets
-- Committee editor (in `admin/`) so service times, events and announcements can be changed without an app update
+It shows daily prayer times with a countdown to the next prayer, a Qibla compass, events and centre information. It sends reminder alerts as local notifications, with extra alerts during Ramadan, and has home-screen and lock-screen widgets. The committee can change service times, events and announcements from a phone using the editor in `admin/`, so an app update isn't needed.
 
 ## Build
 
@@ -17,4 +13,4 @@ xcodegen generate
 open BromleyIslamicCentre.xcodeproj
 ```
 
-Unit tests are in `Tests/`. The editor's API checks run with `npm test` inside `admin/`.
+App tests are in `Tests/`. The editor's API checks run with `npm test` inside `admin/`.
