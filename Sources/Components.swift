@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Tiled star outlines used as a quiet texture. Decorative: hidden from VoiceOver.
+/// Tiled star outlines used as a background texture. Hidden from VoiceOver.
 struct StarPattern: View {
     var cell: CGFloat = 56
     var lineWidth: CGFloat = 1
@@ -19,7 +19,7 @@ struct StarPattern: View {
     }
 }
 
-/// Page background: flat adaptive colour. The star motif is kept for the few places that earn it.
+/// Page background.
 struct ScreenBackground: View {
     var body: some View { Theme.bg.ignoresSafeArea() }
 }
@@ -65,12 +65,11 @@ struct HeroCard<Content: View>: View {
     }
 }
 
-/// Hairline divider in the theme colour.
 struct Hairline: View {
     var body: some View { Rectangle().fill(Theme.divider).frame(height: 1).accessibilityHidden(true) }
 }
 
-/// Plain list row: title, optional subtitle, chevron or external arrow. No box, no leading icon.
+/// List row: title, optional subtitle, chevron or external arrow.
 struct ListRow: View {
     let title: String
     var subtitle: String? = nil
@@ -91,7 +90,7 @@ struct ListRow: View {
     }
 }
 
-/// Row press feedback: a soft tint behind the row and a light tick. Plain rows otherwise give no sign they were touched.
+/// Row press feedback: a soft tint and a light tick.
 struct RowPressStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -101,7 +100,6 @@ struct RowPressStyle: ButtonStyle {
     }
 }
 
-/// External link row (opens in Safari / Phone / Mail).
 struct ExternalRow: View {
     let title: String, url: String
     var subtitle: String? = nil
@@ -112,7 +110,6 @@ struct ExternalRow: View {
     }
 }
 
-/// Stack of rows separated by hairlines.
 struct RowList<Content: View>: View {
     /// Rows rise into place one after another the first time the list appears (skipped under Reduce Motion).
     var stagger = false
@@ -140,7 +137,6 @@ struct RowList<Content: View>: View {
     }
 }
 
-/// Serif section heading. Use instead of repeated gold caps labels.
 struct SectionTitle: View {
     let text: String
     init(_ text: String) { self.text = text }
@@ -151,7 +147,7 @@ struct SectionTitle: View {
 }
 
 extension View {
-    /// Bordered surface for the few things that deserve a box.
+    /// Bordered surface.
     func surfaceCard(radius: CGFloat = 20, stroke: Color = Theme.stroke) -> some View {
         self.padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -202,7 +198,6 @@ struct FeedStatus: View {
     }
 }
 
-/// Empty-state message with an optional follow-up link.
 struct EmptyNote: View {
     let text: String
     var body: some View {

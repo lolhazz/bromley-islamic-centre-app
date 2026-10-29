@@ -14,7 +14,7 @@ struct AlertPlan {
     let coveredUntil: Date?
 }
 
-/// Decides which local notifications to schedule. Pure and testable.
+/// Decides which local notifications to schedule.
 /// iOS keeps at most 64 pending local notifications, so this fills the available slots in time order
 /// (the more alerts a person turns on, the fewer days ahead fit) and adds a reminder shortly before they run out.
 enum AlertPlanner {

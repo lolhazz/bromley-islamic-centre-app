@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// The sky over Bromley at a moment in the day: gradient colours plus where the sun (or moon) sits on its arc.
-/// Pure and testable; `SkyArc` and `HeroCard` draw it. Every gradient stays dark enough for white and gold text.
+/// `SkyArc` and `HeroCard` draw it. The gradients stay dark enough for white and gold text.
 struct DaySky: Equatable {
     struct RGB: Equatable {
         var r: Double, g: Double, b: Double
@@ -9,7 +9,6 @@ struct DaySky: Equatable {
         func mixed(with o: RGB, by t: Double) -> RGB {
             RGB(r: r + (o.r - r) * t, g: g + (o.g - g) * t, b: b + (o.b - b) * t)
         }
-        /// WCAG relative luminance.
         var luminance: Double {
             func lin(_ c: Double) -> Double { c <= 0.03928 ? c / 12.92 : pow((c + 0.055) / 1.055, 2.4) }
             return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
@@ -62,10 +61,8 @@ struct DaySky: Equatable {
         return DaySky(top: colours.top, bottom: colours.bottom, progress: p, isDay: isDay)
     }
 
-    /// Colour of the gradient a fraction `y` (0 top, 1 bottom) of the way down.
     func colour(at y: Double) -> RGB { top.mixed(with: bottom, by: y) }
 
-    /// Contrast ratio of a text colour on the gradient at `y`.
     func contrast(of text: RGB, at y: Double) -> Double {
         let a = text.luminance, b = colour(at: y).luminance
         return (max(a, b) + 0.05) / (min(a, b) + 0.05)

@@ -15,7 +15,7 @@ private struct ArcShape: Shape {
 }
 
 /// Sun or moon travelling its arc between sunrise and Maghrib, with the two times beneath.
-/// Decorative for VoiceOver: the same times are in the prayer list.
+/// Hidden from VoiceOver because the same times are in the prayer list.
 struct SkyArc: View {
     let sky: DaySky
     let sunrise: Date

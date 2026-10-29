@@ -16,16 +16,13 @@ enum Theme {
     static let textSecondary = Color("TextSecondary")
     /// Gold for text and icons: darker in light mode so it stays readable on cream.
     static let accent = Color("AccentText")
-    /// The always-dark teal used for hero blocks in both appearances.
     static let hero = Color("Hero")
-    /// Text colours that sit on `hero`.
     static let onHero = Color.white
     static let onHeroSecondary = Color(red: 0.78, green: 0.85, blue: 0.84)
     static let onHeroAccent = Color(red: 0.878, green: 0.690, blue: 0.290)
 }
 
 extension Font {
-    /// Newsreader, scales with Dynamic Type relative to `style`.
     static func display(_ size: CGFloat, weight: Font.Weight = .regular, relativeTo style: Font.TextStyle = .title2) -> Font {
         let name: String
         switch weight {
@@ -36,7 +33,6 @@ extension Font {
         return .custom(name, size: size, relativeTo: style)
     }
 
-    /// DM Sans, scales with Dynamic Type relative to `style`.
     static func body(_ size: CGFloat, weight: Font.Weight = .regular, relativeTo style: Font.TextStyle = .body) -> Font {
         let name: String
         switch weight {
@@ -75,7 +71,7 @@ struct Screen<Content: View>: View {
     }
 }
 
-/// Large serif page title with an optional plain line under it. No kicker above.
+/// Large serif page title with an optional line under it.
 struct PageTitle: View {
     let title: String
     var subtitle: String? = nil

@@ -7,7 +7,7 @@ Small Vercel project that lets the committee change Jumu'ah times, the venue ban
 - `api/_validate.js`: input checks. `npm test` runs `test/validate.test.mjs`.
 - Storage: Vercel Blob (`config.json`).
 
-## Deploy (not done yet)
+## Deploy
 
 1. Create a Vercel project from this `admin/` folder.
 2. Add a Blob store to the project (sets `BLOB_READ_WRITE_TOKEN`).
