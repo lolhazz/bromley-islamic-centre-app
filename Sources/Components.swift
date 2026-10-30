@@ -91,29 +91,52 @@ struct ListRow: View {
     }
 }
 
+/// Row press feedback: a soft tint behind the row and a light tick. Plain rows otherwise give no sign they were touched.
+struct RowPressStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .background(configuration.isPressed ? Theme.stroke.opacity(0.45) : .clear)
+            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+            .sensoryFeedback(.selection, trigger: configuration.isPressed) { _, pressed in pressed }
+    }
+}
+
 /// External link row (opens in Safari / Phone / Mail).
 struct ExternalRow: View {
     let title: String, url: String
     var subtitle: String? = nil
     var body: some View {
         Link(destination: URL(string: url)!) { ListRow(title: title, subtitle: subtitle, external: true) }
+            .buttonStyle(RowPressStyle())
             .accessibilityHint("Opens outside the app")
     }
 }
 
 /// Stack of rows separated by hairlines.
 struct RowList<Content: View>: View {
+    /// Rows rise into place one after another the first time the list appears (skipped under Reduce Motion).
+    var stagger = false
     @ViewBuilder var content: Content
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var arrived = false
+
     var body: some View {
         VStack(spacing: 0) {
             Hairline()
             Group(subviews: content) { subviews in
-                ForEach(subviews) { subview in
-                    subview
-                    Hairline()
+                ForEach(Array(subviews.enumerated()), id: \.element.id) { i, subview in
+                    let show = !stagger || reduceMotion || arrived
+                    Group {
+                        subview
+                        Hairline()
+                    }
+                    .opacity(show ? 1 : 0)
+                    .offset(y: show ? 0 : 14)
+                    .animation(.easeOut(duration: 0.45).delay(Double(min(i, 8)) * 0.045), value: arrived)
                 }
             }
         }
+        .onAppear { arrived = true }
     }
 }
 

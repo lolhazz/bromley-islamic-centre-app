@@ -14,6 +14,9 @@ final class QiblaModel: NSObject, ObservableObject, CLLocationManagerDelegate {
         super.init()
         manager.delegate = self
         status = manager.authorizationStatus
+        #if DEBUG
+        if let h = DebugRoute.value(after: "-qiblaHeading").flatMap(Double.init) { heading = h }   // the simulator has no compass
+        #endif
     }
 
     var headingAvailable: Bool { CLLocationManager.headingAvailable() }
@@ -34,6 +37,15 @@ final class QiblaModel: NSObject, ObservableObject, CLLocationManagerDelegate {
         let y = sin(Δλ) * cos(φ2)
         let x = cos(φ1) * sin(φ2) - sin(φ1) * cos(φ2) * cos(Δλ)
         return (atan2(y, x) * 180 / .pi + 360).truncatingRemainder(dividingBy: 360)
+    }
+
+    /// Great-circle distance to the Kaaba in kilometres, from the phone or (without location) from Bromley.
+    var distanceKm: Double {
+        let from = coordinate ?? CLLocationCoordinate2D(latitude: PrayerCalculator.latitude, longitude: PrayerCalculator.longitude)
+        let φ1 = from.latitude * .pi / 180, φ2 = Self.kaaba.latitude * .pi / 180
+        let Δφ = φ2 - φ1, Δλ = (Self.kaaba.longitude - from.longitude) * .pi / 180
+        let a = sin(Δφ / 2) * sin(Δφ / 2) + cos(φ1) * cos(φ2) * sin(Δλ / 2) * sin(Δλ / 2)
+        return 6371 * 2 * atan2(sqrt(a), sqrt(1 - a))
     }
 
     /// Degrees to turn to face Makkah, -180...180 (positive = turn right). nil without a heading.
@@ -66,6 +78,7 @@ final class QiblaModel: NSObject, ObservableObject, CLLocationManagerDelegate {
 struct QiblaView: View {
     @StateObject private var model = QiblaModel()
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var pulse = false
 
     private var aligned: Bool { abs(model.turn ?? 180) <= 3 }
 
@@ -79,6 +92,11 @@ struct QiblaView: View {
             }
             .onAppear { model.start() }
             .onDisappear { model.stop() }
+            .onChange(of: aligned, initial: true) { _, now in
+                pulse = false
+                guard now, !reduceMotion else { return }
+                withAnimation(.easeOut(duration: 1.6).repeatForever(autoreverses: false)) { pulse = true }
+            }
             .sensoryFeedback(.success, trigger: aligned) { _, now in now }
         }
     }
@@ -90,7 +108,13 @@ struct QiblaView: View {
             let size = min(geo.size.width, 320)
             let r = size / 2
             ZStack {
+                // Facing Makkah: a ring breathes outwards from the dial. A still glow under Reduce Motion.
+                Circle().stroke(Theme.accent, lineWidth: 2)
+                    .scaleEffect(aligned && pulse && !reduceMotion ? 1.12 : 1)
+                    .opacity(aligned ? (reduceMotion ? 0.5 : (pulse ? 0 : 0.7)) : 0)
+                    .accessibilityHidden(true)
                 dial(radius: r)
+                    .shadow(color: Theme.accent.opacity(aligned ? 0.55 : 0), radius: aligned ? 14 : 0)
                     .rotationEffect(.degrees(-(model.heading ?? 0)))
                     .animation(reduceMotion ? nil : .easeOut(duration: 0.25), value: model.heading)
                 // Fixed marker: the direction the phone points.
@@ -147,6 +171,7 @@ struct QiblaView: View {
         VStack(spacing: 8) {
             Text("\(Int(model.qiblaBearing.rounded()))°")
                 .font(.display(56, weight: .semibold, relativeTo: .largeTitle)).foregroundStyle(Theme.textPrimary)
+            Text(distance).font(.body(15, weight: .medium, relativeTo: .subheadline)).foregroundStyle(Theme.textSecondary).monospacedDigit()
             Text(caption).font(.body(17, weight: aligned ? .bold : .regular)).foregroundStyle(aligned ? Theme.accent : Theme.textSecondary)
                 .multilineTextAlignment(.center)
             if let note { Text(note).font(.body(14, relativeTo: .footnote)).foregroundStyle(Theme.textSecondary).multilineTextAlignment(.center) }
@@ -157,6 +182,11 @@ struct QiblaView: View {
         }
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .combine)
+    }
+
+    private var distance: String {
+        let km = Int((model.distanceKm / 10).rounded() * 10).formatted(.number.locale(Locale(identifier: "en_GB")))
+        return "\(km) km to the Kaaba"
     }
 
     private var caption: String {
@@ -178,7 +208,7 @@ struct QiblaView: View {
 
     private var spoken: String {
         let b = Int(model.qiblaBearing.rounded())
-        guard let turn = model.turn else { return "Makkah is \(b) degrees from north." }
+        guard let turn = model.turn else { return "Makkah is \(b) degrees from north, \(distance)." }
         return aligned ? "You are facing Makkah." : "Makkah is \(b) degrees from north. Turn \(Int(abs(turn).rounded())) degrees to the \(turn > 0 ? "right" : "left")."
     }
 }

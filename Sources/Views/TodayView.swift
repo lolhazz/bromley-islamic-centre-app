@@ -6,21 +6,8 @@ struct TodayView: View {
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 15)) { ctx in
-            content(now: Self.debugNow(ctx.date))
+            content(now: DebugRoute.now(ctx.date))
         }
-    }
-
-    /// DEBUG aid: `-skyHour 7.5` launches with the clock set to that London hour today, to check the sky at any time.
-    private static func debugNow(_ real: Date) -> Date {
-        #if DEBUG
-        if let h = UserDefaults.standard.string(forKey: "skyHour").flatMap(Double.init) {
-            var cal = Calendar(identifier: .gregorian)
-            cal.timeZone = TimeZone(identifier: "Europe/London")!
-            let midnight = cal.startOfDay(for: real)
-            return midnight.addingTimeInterval(h * 3600)
-        }
-        #endif
-        return real
     }
 
     private func content(now: Date) -> some View {
@@ -104,6 +91,7 @@ struct TodayView: View {
                 Text(model.entry.prayer.rawValue)
                     .font(.display(56, weight: .semibold, relativeTo: .largeTitle))
                     .foregroundStyle(Theme.onHero)
+                    .lineLimit(1).minimumScaleFactor(0.4)   // shrink the name rather than break "Maghrib" mid-word
                 Text(model.status)
                     .font(.body(20, weight: .medium, relativeTo: .title3)).foregroundStyle(Theme.onHeroAccent)
                     .contentTransition(.numericText())
