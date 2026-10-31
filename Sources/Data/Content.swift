@@ -91,7 +91,7 @@ enum Content {
         EventItem(tag: "Weekly", title: "Community lecture",
                   detail: "A weekly space for learning, reflection and questions.",
                   when: nil, note: "Speaker and venue announced shortly."),
-        EventItem(tag: "Sundays", title: "Weekend Madrasah",
+        EventItem(tag: "Weekly", title: "Weekend Madrasah",
                   detail: "Ages 5 to 17. Quran, Salah, Islamic studies and Arabic.",
                   when: "Sundays · registration 2:45 pm · finish 5:00 pm", note: nil),
         EventItem(tag: "Young people", title: "Youth classes and NextGen",
