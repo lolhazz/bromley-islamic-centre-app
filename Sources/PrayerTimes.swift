@@ -19,8 +19,15 @@ enum Prayer: String, CaseIterable, Identifiable {
 struct PrayerEntry: Identifiable {
     let prayer: Prayer
     let adhan: Date
-    var iqamah: Date { adhan.addingTimeInterval(Double(prayer.iqamahOffset) * 60) }
+    let iqamah: Date
     var id: String { prayer.id }
+
+    /// `iqamah` defaults to the centre's usual gap after the adhan.
+    init(prayer: Prayer, adhan: Date, iqamah: Date? = nil) {
+        self.prayer = prayer
+        self.adhan = adhan
+        self.iqamah = iqamah ?? adhan.addingTimeInterval(Double(prayer.iqamahOffset) * 60)
+    }
 }
 
 struct DaySchedule {
@@ -29,9 +36,9 @@ struct DaySchedule {
     let entries: [PrayerEntry]
 }
 
-/// Astronomical prayer-time calculation for Bromley.
+/// Astronomical prayer-time calculation for Bromley. This is the fallback: `PrayerSource` uses the London
+/// Unified Prayer Timetable when the app has it, and falls back to these times (offline, or a year it lacks).
 /// Angles/offsets were fitted against the centre's website (Fajr 15°, Isha 13.5°, standard Asr).
-/// Replace with the official Masjidbox feed once the centre provides access.
 enum PrayerCalculator {
     static let latitude = 51.4060
     static let longitude = 0.0148
@@ -40,7 +47,7 @@ enum PrayerCalculator {
     static let asrAdjustMinutes = -2.0
     static let maghribAdjustMinutes = -2.0
 
-    private static var london: Calendar = {
+    static let london: Calendar = {
         var c = Calendar(identifier: .gregorian)
         c.timeZone = TimeZone(identifier: "Europe/London")!
         return c
@@ -49,7 +56,12 @@ enum PrayerCalculator {
     private static func rad(_ d: Double) -> Double { d * .pi / 180 }
     private static func deg(_ r: Double) -> Double { r * 180 / .pi }
 
-    static func schedule(for day: Date) -> DaySchedule {
+    /// The day's times as the app should show them: timetable if available, otherwise calculated, with the
+    /// committee's iqamah rules applied.
+    static func schedule(for day: Date) -> DaySchedule { PrayerSource.schedule(for: day) }
+
+    /// Pure astronomical calculation, with the usual iqamah gaps.
+    static func calculate(for day: Date) -> DaySchedule {
         let comps = london.dateComponents([.year, .month, .day], from: day)
         let midnight = london.date(from: comps)!
         // Anchor on UTC midnight: the solar times are UT hours, and local midnight is wrong by an hour

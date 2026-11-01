@@ -76,6 +76,9 @@ targets:
         excludes:
           - Info.plist
       - path: Sources/PrayerTimes.swift
+      - path: Sources/Data/PrayerTimetable.swift
+      - path: Sources/Data/PrayerSource.swift
+      - path: Sources/Data/PrayerFeed.swift
       - path: Sources/Ramadan.swift
       - path: Sources/EightPointStar.swift
       - path: Resources

@@ -59,6 +59,17 @@ struct PrayerProvider: TimelineProvider {
     func getSnapshot(in context: Context, completion: @escaping (PrayerEntryData) -> Void) { completion(.make(at: .now)) }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<PrayerEntryData>) -> Void) {
+        Task {
+            // The widget cannot read the app's saved data, so it fetches its own copy of the timetable and iqamah rules.
+            if !PrayerSource.isUnderTest {
+                await PrayerFeed.refreshRules()
+                await PrayerFeed.refreshTimes()
+            }
+            completion(Self.timeline())
+        }
+    }
+
+    static func timeline() -> Timeline<PrayerEntryData> {
         var dates: Set<Date> = [.now]
         for offset in 0..<2 {
             let day = Calendar.current.date(byAdding: .day, value: offset, to: .now)!
@@ -66,6 +77,6 @@ struct PrayerProvider: TimelineProvider {
                 for d in [e.adhan, e.iqamah, e.iqamah.addingTimeInterval(15 * 60)] where d > .now { dates.insert(d) }
             }
         }
-        completion(Timeline(entries: dates.sorted().prefix(30).map { .make(at: $0) }, policy: .atEnd))
+        return Timeline(entries: dates.sorted().prefix(30).map { .make(at: $0) }, policy: .atEnd)
     }
 }

@@ -42,6 +42,28 @@ export function validateConfig(input) {
       return { tag: e.tag, title: e.title, detail: e.detail, when: e.when || null, note: e.note || null };
     });
   }
+  if (input.iqamah != null) {
+    const prayers = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
+    if (typeof input.iqamah !== "object" || Array.isArray(input.iqamah)) errors.push("iqamah must be an object keyed by prayer");
+    else {
+      const rules = {};
+      for (const p of Object.keys(input.iqamah)) if (!prayers.includes(p)) errors.push(`iqamah.${p} is not a prayer`);
+      for (const p of prayers) {
+        const r = input.iqamah[p];
+        if (r == null) continue;
+        const hasMins = r.afterMinutes != null, hasTime = r.time != null && r.time !== "";
+        if (hasMins === hasTime) errors.push(`iqamah.${p} needs either minutes after adhan or a fixed time`);
+        else if (hasMins) {
+          if (!Number.isInteger(r.afterMinutes) || r.afterMinutes < 0 || r.afterMinutes > 180) errors.push(`iqamah.${p} minutes must be a whole number from 0 to 180`);
+          else rules[p] = { afterMinutes: r.afterMinutes };
+        } else {
+          if (typeof r.time !== "string" || !/^([01]\d|2[0-3]):[0-5]\d$/.test(r.time)) errors.push(`iqamah.${p} time must look like 13:30`);
+          else rules[p] = { time: r.time };
+        }
+      }
+      out.iqamah = rules;
+    }
+  }
   if (input.ramadanStart != null && input.ramadanStart !== "") {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(input.ramadanStart) || Number.isNaN(Date.parse(input.ramadanStart))) errors.push("ramadanStart must look like 2027-02-08");
     else out.ramadanStart = input.ramadanStart;

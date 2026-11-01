@@ -1,4 +1,5 @@
 import Foundation
+import WidgetKit
 
 /// Shape of the online config file the committee edits. Every field is optional:
 /// anything missing falls back to the built-in value in `Content`.
@@ -11,6 +12,8 @@ struct RemoteConfig: Codable {
     var ramadanStart: String?
     /// Taraweeh / iftar details to show on the Ramadan card.
     var ramadanNote: String?
+    /// Iqamah (jama'ah) rule per prayer, keyed "fajr", "dhuhr", "asr", "maghrib", "isha".
+    var iqamah: [String: IqamahRule]?
 }
 
 /// Live content: bundled defaults, overridden by the last good online copy.
@@ -29,7 +32,7 @@ final class ConfigStore: ObservableObject {
     @Published private(set) var lastUpdated: Date?
 
     /// Hosted JSON the committee edits through the admin page (see `admin/`). nil = bundled content only.
-    static let configURL = URL(string: "https://bic-app-admin-hoodboyzt1-1429s-projects.vercel.app/api/config")
+    static let configURL: URL? = PrayerFeed.baseURL.appendingPathComponent("api/config")
 
     private static let cacheKey = "remoteConfigCache"
     private static let dateKey = "remoteConfigDate"
@@ -54,6 +57,8 @@ final class ConfigStore: ObservableObject {
             return
         }
         apply(cfg)
+        await PrayerFeed.refreshTimes()   // after apply, so the new iqamah rules are in place first
+        WidgetCenter.shared.reloadAllTimelines()
         loadState = .loaded
         lastUpdated = .now
         UserDefaults.standard.set(data, forKey: Self.cacheKey)
@@ -67,5 +72,16 @@ final class ConfigStore: ObservableObject {
         events = c.events ?? Content.events
         ramadanStart = c.ramadanStart
         ramadanNote = c.ramadanNote
+        PrayerFeed.setRules(Self.debugIqamah() ?? c.iqamah)
+    }
+
+    /// DEBUG only: `-iqamahRules '{"fajr":{"afterMinutes":30}}'` pretends the committee published these rules.
+    private static func debugIqamah() -> [String: IqamahRule]? {
+        #if DEBUG
+        return DebugRoute.value(after: "-iqamahRules")
+            .flatMap { try? JSONDecoder().decode([String: IqamahRule].self, from: Data($0.utf8)) }
+        #else
+        return nil
+        #endif
     }
 }
