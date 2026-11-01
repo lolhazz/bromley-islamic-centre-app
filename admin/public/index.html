@@ -41,6 +41,12 @@
     <button class="ghost" id="addJumuah">Add a Jumu’ah</button>
   </section>
   <section>
+    <h2>Iqamah times</h2>
+    <p class="hint">When the jama’ah starts, for the five daily prayers. Use minutes after the adhan, or fill in a fixed time (24-hour, like 13:30), which wins if both are set. Changes reach the Prayer tab, the widgets and the alerts.</p>
+    <div id="iqamah"></div>
+    <button class="ghost" id="resetIqamah">Reset to the usual times</button>
+  </section>
+  <section>
     <h2>Venue notice</h2>
     <p class="hint">The banner on the Prayer tab, for example the current temporary venue.</p>
     <textarea id="venueBanner"></textarea>
@@ -77,6 +83,35 @@
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
 const state = { jumuah: [], announcements: [], events: [] };
+const PRAYERS = [["fajr","Fajr"],["dhuhr","Dhuhr"],["asr","Asr"],["maghrib","Maghrib"],["isha","Isha"]];
+const USUAL = { fajr: 40, dhuhr: 46, asr: 27, maghrib: 5, isha: 31 };
+let iqamah = {};   // prayer -> { afterMinutes } | { time }
+
+function renderIqamah() {
+  const host = $("iqamah");
+  host.innerHTML = "";
+  PRAYERS.forEach(([k, name]) => {
+    const r = iqamah[k] ?? { afterMinutes: USUAL[k] };
+    const div = document.createElement("div");
+    div.className = "item";
+    div.innerHTML = `<strong>${name}</strong><div class="row">
+      <div><label for="iq-${k}-m">Minutes after adhan</label><input id="iq-${k}-m" type="number" inputmode="numeric" min="0" max="180" step="1" value="${r.afterMinutes ?? ""}"></div>
+      <div><label for="iq-${k}-t">Or a fixed time</label><input id="iq-${k}-t" type="time" value="${esc(r.time ?? "")}"></div></div>`;
+    host.appendChild(div);
+  });
+}
+
+// Read the five rows back into rules. Returns { rules } or { error }.
+function readIqamah() {
+  const rules = {};
+  for (const [k, name] of PRAYERS) {
+    const mins = $(`iq-${k}-m`).value.trim(), time = $(`iq-${k}-t`).value;
+    if (time) rules[k] = { time };
+    else if (/^\d+$/.test(mins) && +mins <= 180) rules[k] = { afterMinutes: +mins };
+    else return { error: `${name}: enter whole minutes from 0 to 180, or a fixed time.` };
+  }
+  return { rules };
+}
 
 const schemas = {
   jumuah: [["label","Name (e.g. 1st Jumu’ah)"],["khutbah","Khutbah time"],["jamaah","Jama’ah time"],["venue","Venue (optional)"],["note","Note (optional, e.g. Brothers only)"]],
@@ -120,15 +155,21 @@ async function load() {
     state.announcements = cfg.announcements ?? [];
     state.events = cfg.events ?? [];
     $("venueBanner").value = cfg.venueBanner ?? "We currently meet in temporary community spaces. Confirm the venue before you travel.";
+    iqamah = cfg.iqamah ?? {};
     $("ramadanStart").value = cfg.ramadanStart ?? "";
     $("ramadanNote").value = cfg.ramadanNote ?? "";
   }
   ["jumuah","announcements","events"].forEach(render);
+  renderIqamah();
 }
+$("resetIqamah").addEventListener("click", () => { iqamah = {}; renderIqamah(); });
 
 $("publish").addEventListener("click", async () => {
   const clean = (arr) => arr.map((o) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, v.trim ? v.trim() : v])));
+  const iq = readIqamah();
+  if (iq.error) return show(iq.error, false);
   const body = {
+    iqamah: iq.rules,
     jumuah: clean(state.jumuah), venueBanner: $("venueBanner").value.trim(),
     announcements: clean(state.announcements), events: clean(state.events),
     ramadanStart: $("ramadanStart").value, ramadanNote: $("ramadanNote").value.trim(),

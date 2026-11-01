@@ -2,6 +2,6 @@
   "name": "bic-admin",
   "private": true,
   "type": "module",
-  "scripts": { "test": "node test/validate.test.mjs" },
+  "scripts": { "test": "node test/validate.test.mjs && node test/times.test.mjs" },
   "dependencies": { "@vercel/blob": "^1.0.0" }
 }

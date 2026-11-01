@@ -6,7 +6,7 @@ import Foundation
 struct PrayerCalculatorTests {
     /// Values shown on bromleyislamiccentre.org.uk on Wed 14 Oct 2026 (BST).
     @Test func matchesCentreWebsiteOn14Oct2026() {
-        let day = PrayerCalculator.schedule(for: TestClock.date(2026, 10, 14))
+        let day = PrayerCalculator.calculate(for: TestClock.date(2026, 10, 14))
         let times = Dictionary(uniqueKeysWithValues: day.entries.map { ($0.prayer, TestClock.hm($0.adhan)) })
         #expect(times[.fajr] == "05:50")
         #expect(times[.dhuhr] == "12:46")
@@ -16,7 +16,7 @@ struct PrayerCalculatorTests {
     }
 
     @Test func iqamahTimesMatchWebsite() {
-        let day = PrayerCalculator.schedule(for: TestClock.date(2026, 10, 14))
+        let day = PrayerCalculator.calculate(for: TestClock.date(2026, 10, 14))
         let iq = Dictionary(uniqueKeysWithValues: day.entries.map { ($0.prayer, TestClock.hm($0.iqamah)) })
         #expect(iq[.fajr] == "06:30")
         #expect(iq[.dhuhr] == "13:32")
@@ -26,7 +26,7 @@ struct PrayerCalculatorTests {
     }
 
     @Test func sunriseSitsBetweenFajrAndDhuhr() {
-        let day = PrayerCalculator.schedule(for: TestClock.date(2026, 10, 14))
+        let day = PrayerCalculator.calculate(for: TestClock.date(2026, 10, 14))
         #expect(day.sunrise > day.entries[0].adhan)
         #expect(day.sunrise < day.entries[1].adhan)
         #expect(TestClock.hm(day.sunrise) == "07:21")
@@ -38,7 +38,7 @@ struct PrayerCalculatorTests {
         var day = TestClock.date(2026, 1, 1)
         let end = TestClock.date(2028, 1, 1)
         while day < end {
-            let s = PrayerCalculator.schedule(for: day)
+            let s = PrayerCalculator.calculate(for: day)
             let a = s.entries.map(\.adhan)
             #expect(a == a.sorted(), "out of order on \(day)")
             for e in s.entries {
@@ -52,8 +52,8 @@ struct PrayerCalculatorTests {
 
     @Test func clocksGoingBackKeepsTimesSensible() {
         // BST ends Sun 25 Oct 2026: Dhuhr goes from about 12:44 BST on Saturday to about 11:44 GMT on Monday.
-        let sat = PrayerCalculator.schedule(for: TestClock.date(2026, 10, 24))
-        let mon = PrayerCalculator.schedule(for: TestClock.date(2026, 10, 26))
+        let sat = PrayerCalculator.calculate(for: TestClock.date(2026, 10, 24))
+        let mon = PrayerCalculator.calculate(for: TestClock.date(2026, 10, 26))
         #expect(TestClock.hm(sat.entries[1].adhan) == "12:44")
         #expect(TestClock.hm(mon.entries[1].adhan) == "11:44")
     }
@@ -63,7 +63,7 @@ struct PrayerCalculatorTests {
         for (change, next) in [(TestClock.date(2026, 10, 25), TestClock.date(2026, 10, 26)),
                                (TestClock.date(2027, 3, 28), TestClock.date(2027, 3, 29)),
                                (TestClock.date(2027, 10, 31), TestClock.date(2027, 11, 1))] {
-            let a = PrayerCalculator.schedule(for: change), b = PrayerCalculator.schedule(for: next)
+            let a = PrayerCalculator.calculate(for: change), b = PrayerCalculator.calculate(for: next)
             for (x, y) in zip(a.entries, b.entries) {
                 // The same prayer a day later is about 24 real hours on (the clock moves, the sun does not).
                 let drift = y.adhan.timeIntervalSince(x.adhan) - 24 * 3600
@@ -71,12 +71,12 @@ struct PrayerCalculatorTests {
             }
         }
         // 25 Oct 2026 Maghrib is about 16:46 GMT, not 15:46.
-        #expect(TestClock.hm(PrayerCalculator.schedule(for: TestClock.date(2026, 10, 25)).entries[3].adhan) == "16:46")
+        #expect(TestClock.hm(PrayerCalculator.calculate(for: TestClock.date(2026, 10, 25)).entries[3].adhan) == "16:46")
     }
 
     @Test func midsummerAndMidwinterAreReasonable() {
-        let summer = PrayerCalculator.schedule(for: TestClock.date(2026, 6, 21))
-        let winter = PrayerCalculator.schedule(for: TestClock.date(2026, 12, 21))
+        let summer = PrayerCalculator.calculate(for: TestClock.date(2026, 6, 21))
+        let winter = PrayerCalculator.calculate(for: TestClock.date(2026, 12, 21))
         #expect(summer.entries[4].adhan.timeIntervalSince(summer.entries[3].adhan) > 60 * 60)   // Isha well after Maghrib
         #expect(TestClock.hm(summer.entries[3].adhan) > "20:30")
         #expect(TestClock.hm(winter.entries[3].adhan) < "16:30")
