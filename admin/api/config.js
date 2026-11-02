@@ -7,10 +7,14 @@ const AUTH_PATH = "auth-state.json";
 const MAX_FAILS = 10;
 const LOCK_MS = 15 * 60 * 1000;
 
+// Blob files are cached by the CDN for a long time, and an overwritten file can keep being served stale to this
+// function for minutes. A fresh query string is a new cache key, so every read comes from the store itself.
+const fresh = (url) => `${url}${url.includes("?") ? "&" : "?"}v=${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
 async function readJson(path) {
   const { blobs } = await list({ prefix: path, limit: 1 });
   if (!blobs.length) return null;
-  const res = await fetch(blobs[0].url, { cache: "no-store" });
+  const res = await fetch(fresh(blobs[0].url), { cache: "no-store" });
   return res.ok ? res.json() : null;
 }
 
@@ -25,7 +29,7 @@ const safeEqual = (a = "", b = "") => {
 async function current() {
   const { blobs } = await list({ prefix: PATH, limit: 1 });
   if (!blobs.length) return {};
-  const res = await fetch(blobs[0].url, { cache: "no-store" });
+  const res = await fetch(fresh(blobs[0].url), { cache: "no-store" });
   return res.ok ? res.json() : {};
 }
 
