@@ -26,7 +26,8 @@ export default async function handler(req, res) {
     res.setHeader("Cache-Control", "public, s-maxage=86400, stale-while-revalidate=604800");
     return res.status(200).json(result.value);
   } catch (err) {
-    console.error("timetable fetch failed:", err.message); // never log the URL: it contains the key
+    // The upstream URL contains the key, so keep it out of the logs even if an error message quotes the URL.
+    console.error("timetable fetch failed:", String(err.message).split(key).join("[key]"));
     return res.status(502).json({ error: "Could not get the prayer times just now" });
   }
 }
