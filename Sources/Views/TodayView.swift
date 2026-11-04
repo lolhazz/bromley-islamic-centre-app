@@ -290,7 +290,7 @@ struct TodayView: View {
     // MARK: Footnote
 
     private var openingHours: some View {
-        Text("The Masjid opens 15 minutes before each congregational prayer and closes 30 minutes after it has finished. Adhan times are calculated for Bromley; congregational times can differ, so please confirm the venue and jama’ah time before you travel.")
+        Text("The Masjid opens 15 minutes before each congregational prayer and closes 30 minutes after it has finished. Adhan times follow the London Unified Prayer Timetable; congregational times can differ, so please confirm the venue and jama’ah time before you travel.")
             .font(.body(13, relativeTo: .footnote)).foregroundStyle(Theme.textSecondary)
     }
 }

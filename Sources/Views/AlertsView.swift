@@ -36,7 +36,7 @@ struct AlertsView: View {
             } header: {
                 Text("Reminders")
             } footer: {
-                Text("Adhan times are calculated for Bromley. Congregational times can differ, so confirm the venue and jama’ah time before you travel.")
+                Text("Adhan times follow the London Unified Prayer Timetable. Congregational times can differ, so confirm the venue and jama’ah time before you travel.")
             }
             .listRowBackground(Theme.surface)
 

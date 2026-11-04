@@ -8,7 +8,7 @@ struct PrayerWidget: Widget {
                 .containerBackground(for: .widget) { WidgetBackground() }
         }
         .configurationDisplayName("Next prayer")
-        .description("Countdown to the next adhan or jama’ah at Bromley Islamic Centre. Times are calculated for Bromley.")
+        .description("Countdown to the next adhan or jama’ah at Bromley Islamic Centre. Adhan times follow the London Unified Prayer Timetable.")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge,
                             .accessoryRectangular, .accessoryCircular, .accessoryInline])
     }
