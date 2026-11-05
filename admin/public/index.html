@@ -12,7 +12,7 @@
   header { background:var(--teal); color:#fff; padding:20px 16px; }
   header h1 { margin:0; font:600 22px Georgia,serif; }
   header p { margin:4px 0 0; opacity:.8; font-size:14px; }
-  main { max-width:720px; margin:0 auto; padding:16px; }
+  main { max-width:720px; margin:0 auto; padding:16px 16px 0; }
   section { background:#fff; border:1px solid var(--line); border-radius:14px; padding:16px; margin:16px 0; }
   h2 { margin:0 0 4px; font:600 18px Georgia,serif; color:var(--teal); }
   .hint { margin:0 0 12px; font-size:13px; color:#5b6a69; }
@@ -25,10 +25,11 @@
   .primary { background:var(--teal); color:#fff; width:100%; padding:14px; font-size:16px; }
   .ghost { background:#eee8d8; color:var(--ink); }
   .danger { background:#f3d9d4; color:#7a2318; }
-  #status { margin:12px 0; padding:12px; border-radius:10px; display:none; font-size:14px; }
+  #status { margin:0 0 10px; padding:12px; border-radius:10px; display:none; font-size:14px; font-weight:600; box-shadow:0 2px 10px rgba(0,0,0,.12); }
   #status.ok { display:block; background:#dff0e3; color:#16502a; }
   #status.err { display:block; background:#f8dcd7; color:#7a2318; }
-  .bar { position:sticky; bottom:0; background:linear-gradient(transparent,var(--cream) 30%); padding:20px 0 12px; }
+  .bar { position:sticky; bottom:0; background:linear-gradient(transparent,var(--cream) 30%); padding:20px 0 12px; z-index:5; }
+  button:disabled { opacity:.7; cursor:progress; }
 </style>
 </head>
 <body>
@@ -75,9 +76,9 @@
     <h2>Publish</h2>
     <label for="passcode">Passcode</label>
     <input id="passcode" type="password" autocomplete="current-password">
-    <div id="status" role="status"></div>
-    <div class="bar"><button class="primary" id="publish">Publish to the app</button></div>
+    <p class="hint">Enter the passcode, then press the button at the bottom of the screen. It stays there while you scroll, with the result shown just above it.</p>
   </section>
+  <div class="bar"><div id="status" role="status" aria-live="polite"></div><button class="primary" id="publish">Publish to the app</button></div>
 </main>
 <script>
 const $ = (id) => document.getElementById(id);
@@ -141,7 +142,12 @@ for (const [btn, kind] of [["addJumuah","jumuah"],["addAnnouncement","announceme
   $(btn).addEventListener("click", () => { state[kind].push({ ...blank[kind] }); render(kind); });
 }
 
-function show(msg, ok) { const s = $("status"); s.textContent = msg; s.className = ok ? "ok" : "err"; }
+function show(msg, ok) {
+  const s = $("status");
+  const t = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  s.textContent = `${msg} (${t})`;
+  s.className = ok ? "ok" : "err";
+}
 
 async function load() {
   let cfg = {};
@@ -164,25 +170,32 @@ async function load() {
 }
 $("resetIqamah").addEventListener("click", () => { iqamah = {}; renderIqamah(); });
 
-$("publish").addEventListener("click", async () => {
-  const clean = (arr) => arr.map((o) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, v.trim ? v.trim() : v])));
+$("publish").addEventListener("click", () => publish().catch((e) => {
+  $("publish").disabled = false; $("publish").textContent = "Publish to the app";
+  show("Something went wrong in the page, so nothing was published: " + e.message, false);
+}));
+
+async function publish() {
+  const clean = (arr) => arr.map((o) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, typeof v === "string" ? v.trim() : v])));
+  if (!$("passcode").value) { show("Enter the passcode first. Nothing was published.", false); $("passcode").scrollIntoView({ block: "center" }); $("passcode").focus(); return; }
   const iq = readIqamah();
-  if (iq.error) return show(iq.error, false);
+  if (iq.error) return show(iq.error + " Nothing was published.", false);
   const body = {
     iqamah: iq.rules,
     jumuah: clean(state.jumuah), venueBanner: $("venueBanner").value.trim(),
     announcements: clean(state.announcements), events: clean(state.events),
     ramadanStart: $("ramadanStart").value, ramadanNote: $("ramadanNote").value.trim(),
   };
-  $("publish").disabled = true;
+  const btn = $("publish");
+  btn.disabled = true; btn.textContent = "Publishing…"; show("Publishing, please wait…", true);
   try {
     const res = await fetch("/api/config", { method: "POST", headers: { "content-type": "application/json", "x-admin-passcode": $("passcode").value }, body: JSON.stringify(body) });
     const data = await res.json().catch(() => ({}));
-    if (res.ok) show("Published. The app will pick this up next time it opens.", true);
-    else show((data.error || "Something went wrong") + (data.details ? ": " + data.details.join("; ") : ""), false);
+    if (res.ok) show("Published. Phones pick it up when the app opens or is pulled down to refresh.", true);
+    else show((res.status === 401 ? "Wrong passcode. Nothing was published." : (data.error || "Something went wrong")) + (data.details ? ": " + data.details.join("; ") : ""), false);
   } catch { show("No connection. Nothing was published.", false); }
-  $("publish").disabled = false;
-});
+  btn.disabled = false; btn.textContent = "Publish to the app";
+}
 
 load();
 </script>
