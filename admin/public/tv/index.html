@@ -6,10 +6,10 @@
 <title>Bromley Islamic Centre TV</title>
 <meta name="robots" content="noindex">
 <style>
-@font-face { font-family: "Newsreader"; src: url("fonts/Newsreader-Regular.ttf"); font-weight: 400; }
-@font-face { font-family: "Newsreader"; src: url("fonts/Newsreader-SemiBold.ttf"); font-weight: 600; }
-@font-face { font-family: "DM Sans"; src: url("fonts/DMSans-Regular.ttf"); font-weight: 400; }
-@font-face { font-family: "DM Sans"; src: url("fonts/DMSans-Bold.ttf"); font-weight: 700; }
+@font-face { font-family: "Newsreader"; src: url("/tv/fonts/Newsreader-Regular.ttf"); font-weight: 400; }
+@font-face { font-family: "Newsreader"; src: url("/tv/fonts/Newsreader-SemiBold.ttf"); font-weight: 600; }
+@font-face { font-family: "DM Sans"; src: url("/tv/fonts/DMSans-Regular.ttf"); font-weight: 400; }
+@font-face { font-family: "DM Sans"; src: url("/tv/fonts/DMSans-Bold.ttf"); font-weight: 700; }
 
 :root {
   --teal: #004845;
@@ -130,7 +130,7 @@ table.times { width: 100%; border-collapse: collapse; margin-top: 1.6vw; font-va
   font-size: calc(var(--u) * 1.7); color: var(--soft);
 }
 .bar .brand { display: flex; align-items: center; gap: 1.2vw; }
-.logo { width: 4.4vw; height: 4.4vw; background: var(--cream); -webkit-mask: url("logo.png") center/contain no-repeat; mask: url("logo.png") center/contain no-repeat; }
+.logo { width: 4.4vw; height: 4.4vw; background: var(--cream); -webkit-mask: url("/tv/logo.png") center/contain no-repeat; mask: url("/tv/logo.png") center/contain no-repeat; }
 .bar .brand span { font-family: "Newsreader", Georgia, serif; font-size: calc(var(--u) * 2); color: var(--cream); font-weight: 600; }
 .bar .nx b { color: var(--cream); font-weight: 700; } .bar .nx i { font-style: normal; color: var(--gold); font-weight: 700; }
 .dots { position: absolute; left: 50%; bottom: .9vw; display: flex; gap: .6vw; transform: translateX(-50%); }
@@ -330,6 +330,8 @@ function showItem() {
 function go(i) {
   const els = [...document.querySelectorAll(".scene")];
   idx = i % els.length;
+  // no events or announcements published yet: skip that scene instead of showing it empty
+  if (els[idx].id === "evScene" && !(window._items || []).length && !q.get("scene")) idx = (idx + 1) % els.length;
   if (els[idx].id === "evScene") showItem();
   els.forEach((e, k) => e.classList.toggle("on", k === idx));
   [...$("dots").children].forEach((d, k) => d.classList.toggle("on", k === idx));
