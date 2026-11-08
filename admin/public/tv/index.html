@@ -26,6 +26,7 @@ body {
   font-family: "DM Sans", system-ui, sans-serif; color: var(--cream);
   font-size: calc(var(--u) * 1.5);
 }
+.notimes #tl, .notimes #nextLine, .notimes #timesBody { visibility: hidden; }
 .serif { font-family: "Newsreader", Georgia, serif; }
 
 /* Sky: slow-moving gradient, never fully static */
@@ -92,23 +93,23 @@ table.times { width: 100%; border-collapse: collapse; margin-top: calc(1.6 * var
 /* ---- scene: mosque ---- */
 .mosque .h2 { font-size: calc(var(--u) * 8); }
 .mosque p.lead { font-size: calc(var(--u) * 2.8); line-height: 1.35; margin-top: calc(2 * var(--vw)); max-width: calc(62 * var(--vw)); color: var(--cream); }
-.steps { display: flex; gap: calc(2.2 * var(--vw)); margin-top: calc(3.2 * var(--vw)); max-width: calc(58 * var(--vw)); }
+.steps { display: flex; gap: calc(2.2 * var(--vw)); margin-top: calc(2.6 * var(--vw)); max-width: calc(58 * var(--vw)); }
 .step { flex: 1; border-top: 1px solid rgba(251,248,241,.28); padding-top: calc(1.1 * var(--vw)); }
 .step .n { font-family: "Newsreader", Georgia, serif; font-size: calc(var(--u) * 3.2); color: var(--soft); }
 .step .t { font-size: calc(var(--u) * 1.8); margin-top: calc(.3 * var(--vw)); line-height: 1.3; }
 .step.now .n, .step.now .t { color: var(--cream); } .step.now { border-top-color: var(--gold); }
 .step:not(.now) .t { color: var(--soft); }
-.cta { margin-top: calc(3.4 * var(--vw)); display: inline-flex; align-items: center; gap: calc(1.6 * var(--vw)); background: var(--cream); color: var(--deep);
+.cta { margin-top: calc(2.6 * var(--vw)); display: inline-flex; align-items: center; gap: calc(1.6 * var(--vw)); background: var(--cream); color: var(--deep);
   padding: calc(1.2 * var(--vw)) calc(2.4 * var(--vw)); border-radius: calc(99 * var(--vw)); font-weight: 700; font-size: calc(var(--u) * 2.4); align-self: flex-start; }
 .cta span { font-weight: 400; color: #345; }
 .qr { position: absolute; right: 0; top: 54%; transform: translateY(-50%); width: calc(15 * var(--vw)); text-align: center; font-size: calc(var(--u) * 1.5); color: var(--soft); }
 .qr svg { width: 100%; height: auto; background: var(--cream); padding: calc(1 * var(--vw)); border-radius: calc(.8 * var(--vw)); display: block; margin-bottom: calc(.8 * var(--vw)); }
 
 /* ---- scene: events / announcements ---- */
-.feature .when { font-size: calc(var(--u) * 2.2); color: var(--gold); font-weight: 700; margin-bottom: calc(1.6 * var(--vw)); max-width: calc(63 * var(--vw)); }
-.feature .title { font-size: calc(var(--u) * 7); font-weight: 600; line-height: 1.04; max-width: calc(70 * var(--vw)); }
-.feature p { font-size: calc(var(--u) * 2.6); line-height: 1.38; max-width: calc(62 * var(--vw)); margin-top: calc(1.8 * var(--vw)); }
-.feature .note { font-size: calc(var(--u) * 2); color: var(--soft); margin-top: calc(1.6 * var(--vw)); }
+.feature .when { font-size: calc(var(--u) * 2.2 * var(--fit, 1)); color: var(--gold); font-weight: 700; margin-bottom: calc(1.6 * var(--vw)); max-width: calc(63 * var(--vw)); }
+.feature .title { font-size: calc(var(--u) * 7 * var(--fit, 1)); font-weight: 600; line-height: 1.04; max-width: calc(70 * var(--vw)); }
+.feature p { font-size: calc(var(--u) * 2.6 * var(--fit, 1)); line-height: 1.38; max-width: calc(62 * var(--vw)); margin-top: calc(1.8 * var(--vw)); }
+.feature .note { font-size: calc(var(--u) * 2 * var(--fit, 1)); color: var(--soft); margin-top: calc(1.6 * var(--vw)); }
 
 /* ---- scene: jumuah ---- */
 .jum { display: grid; grid-template-columns: 1fr 1fr; gap: calc(6 * var(--vw)); margin-top: calc(3 * var(--vw)); }
@@ -226,7 +227,14 @@ const FALLBACK = {
   iqamah: {},
 };
 const q = new URLSearchParams(location.search);
-let cfg = FALLBACK, timetable = null, live = false;
+let cfg = FALLBACK, live = false;
+const tt = {};   // timetables by year, e.g. tt["2026"]
+// the sample times are for the mock-up only: on the real site they are never shown as if they were today's times
+const SAMPLE_OK = q.has("mock") || ["localhost", "127.0.0.1", ""].includes(location.hostname);
+let noTimes = false;
+// keep the last good data so a restart while the internet is down still shows real times
+const store = { get(k) { try { return JSON.parse(localStorage.getItem("bic-tv-" + k)); } catch { return null; } }, set(k, v) { try { localStorage.setItem("bic-tv-" + k, JSON.stringify(v)); } catch {} } };
+{ const c = store.get("cfg"); if (c) cfg = { ...FALLBACK, ...c }; for (const y of [2025, 2026, 2027, 2028]) { const t = store.get("tt" + y); if (t && t.days) tt[y] = t; } }
 
 // Debug: ?now=2026-11-08T17:30 pretends it is that time (London wall clock); ?scene=2 pins a scene.
 function now() {
@@ -238,12 +246,15 @@ const boot = Date.now();
 
 async function getJSON(url) { const r = await fetch(url, { cache: "no-store" }); if (!r.ok) throw new Error(r.status); return r.json(); }
 async function refresh() {
-  try { const c = await getJSON("/api/config"); cfg = { ...FALLBACK, ...c }; live = true; } catch { /* keep what we have */ }
-  try {
-    const y = now().getFullYear();
-    if (!timetable || timetable.year !== y) timetable = await getJSON("/api/times?year=" + y);
-  } catch { /* sample times */ }
+  try { const c = await getJSON("/api/config"); cfg = { ...FALLBACK, ...c }; live = true; store.set("cfg", c); } catch { /* keep what we have */ }
+  // this year, plus next year from December so tomorrow's Fajr is right on New Year's Eve
+  const d = now(), y = d.getFullYear();
+  for (const yr of d.getMonth() === 11 ? [y, y + 1] : [y]) {
+    if (tt[yr] && tt[yr].fetched && Date.now() - tt[yr].fetched < 864e5) continue;
+    try { const t = await getJSON("/api/times?year=" + yr); t.fetched = Date.now(); tt[yr] = t; store.set("tt" + yr, t); } catch { /* use what we have */ }
+  }
   buildScenes();
+  if ($("evScene").classList.contains("on")) showItem();   // fresh data arrived while the events slide is showing
 }
 
 // ---------- time helpers ----------
@@ -254,7 +265,12 @@ const fmt = (m) => { const h = Math.floor(m / 60) % 24, mm = Math.round(m % 60);
 function rel(mins) { mins = Math.max(0, Math.round(mins)); const h = Math.floor(mins / 60), m = mins % 60; return h ? `${h}h ${m}m` : `${m}m`; }
 
 function scheduleFor(key) {
-  const t = (timetable && timetable.days && timetable.days[key]) || SAMPLE_TIMES;
+  const look = (k) => { const y = tt[k.slice(0, 4)]; return y && y.days && y.days[k]; };
+  // the timetable for a new year may not be published yet: a day's times are within a minute or two of the next day's, so borrow from the day before or after
+  const near = (n) => look(new Date(Date.parse(key + "T12:00:00Z") + n * 864e5).toISOString().slice(0, 10));
+  const real = look(key) || near(-1) || near(1);
+  noTimes = !real && !SAMPLE_OK;
+  const t = real || SAMPLE_TIMES;
   const rows = ["fajr", "dhuhr", "asr", "maghrib", "isha"].map((k) => {
     const adhan = hm(t[k]);
     const r = cfg.iqamah && cfg.iqamah[k];
@@ -289,7 +305,10 @@ function tick() {
   $("nextName").textContent = (n.tomorrow ? "Tomorrow, " : "") + n.name;
   if (n.past) $("nextLine").innerHTML = `Adhan was at ${fmt(n.adhan)}. Iqamah <b>${fmt(n.iq)}</b>${n.untilIq > 0 ? ` in ${rel(n.untilIq)}` : ""}`;
   else $("nextLine").innerHTML = `Adhan in ${rel(n.until)} at ${fmt(n.adhan)}. Iqamah <b>${fmt(n.iq)}</b>`;
-  $("barNext").innerHTML = n.past ? `<b>${n.name}</b> iqamah <i>${fmt(n.iq)}</i>` : `Next: <b>${n.name}</b> ${fmt(n.adhan)} · iqamah <i>${fmt(n.iq)}</i>`;
+  document.body.classList.toggle("notimes", noTimes);
+  if (noTimes) $("nextName").textContent = "Times unavailable";
+  if (noTimes) $("barNext").innerHTML = `<b>Prayer times unavailable.</b> Check the internet connection.`;
+  else $("barNext").innerHTML = n.past ? `<b>${n.name}</b> iqamah <i>${fmt(n.iq)}</i>` : `Next: <b>${n.name}</b> ${fmt(n.adhan)} · iqamah <i>${fmt(n.iq)}</i>`;
 
   // day timeline
   {
@@ -326,7 +345,19 @@ const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<
 function showItem() {
   const items = window._items || []; if (!items.length) return;
   const it = items[window._itemI++ % items.length];
-  $("evWhen").textContent = it.when || ""; $("evTitle").textContent = it.title; $("evBody").textContent = it.body; $("evNote").textContent = it.note || "";
+  $("evWhen").textContent = it.when || ""; $("evTitle").textContent = it.title; $("evBody").textContent = it.body || ""; $("evNote").textContent = it.note || "";
+  fitFeature();
+  // reading time: about 3 words a second plus a few seconds to take it in, never shorter than the slide's base time, never longer than 30 s
+  const words = `${it.title} ${it.body || ""} ${it.note || ""}`.trim().split(/\s+/).length;
+  window._evLen = Math.min(30, Math.max(Number($("evScene").dataset.len), 5 + words / 3));
+}
+// shrink the text step by step until the whole block fits the slide, so a long title or announcement never runs off the screen
+function fitFeature() {
+  const sc = $("evScene"), kids = [...sc.querySelectorAll(".when, .title, p, .note")].filter((e) => e.textContent);
+  if (!kids.length) return;
+  let f = 1; sc.style.setProperty("--fit", 1);
+  const height = () => kids[kids.length - 1].getBoundingClientRect().bottom - kids[0].getBoundingClientRect().top;
+  while (height() > sc.clientHeight * 0.96 && f > 0.4) { f -= 0.04; sc.style.setProperty("--fit", f.toFixed(2)); }
 }
 
 function go(i) {
@@ -338,7 +369,7 @@ function go(i) {
   els.forEach((e, k) => e.classList.toggle("on", k === idx));
   [...$("dots").children].forEach((d, k) => d.classList.toggle("on", k === idx));
   clearTimeout(timer);
-  if (!q.get("scene")) timer = setTimeout(() => go(idx + 1), Number(els[idx].dataset.len) * 1000);
+  if (!q.get("scene")) timer = setTimeout(() => go(idx + 1), (els[idx].id === "evScene" && window._evLen ? window._evLen : Number(els[idx].dataset.len)) * 1000);
 }
 
 (function init() {
@@ -348,6 +379,10 @@ function go(i) {
   buildScenes(); tick(); setInterval(tick, 1000);
   go(Number(q.get("scene") || 0));
   refresh(); setInterval(refresh, 10 * 60 * 1000);
+  // ask the TV browser to keep the screen on, where it lets us (the TV's own sleep setting still needs turning off)
+  let lock = null;
+  const keepAwake = async () => { try { if (navigator.wakeLock && document.visibilityState === "visible") lock = await navigator.wakeLock.request("screen"); } catch {} };
+  keepAwake(); document.addEventListener("visibilitychange", keepAwake);
   // Safety net for TVs that run for weeks: reload once a day at 03:30 London time to clear any leaked state.
   setInterval(() => { const m = londonMinutes(now()); if (m > 210 && m < 211) location.reload(); }, 30000);
 })();
