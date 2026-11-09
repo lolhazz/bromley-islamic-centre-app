@@ -121,9 +121,8 @@ table.times { width: 100%; border-collapse: collapse; margin-top: calc(1.6 * var
 .venue { margin-top: calc(3 * var(--vw)); font-size: calc(var(--u) * 2); color: var(--soft); max-width: calc(66 * var(--vw)); line-height: 1.35; }
 
 /* ---- motif ---- */
-.bigstar { position: absolute; right: calc(-4 * var(--vw)); top: 50%; width: calc(34 * var(--vw)); height: calc(34 * var(--vw)); transform: translateY(-50%); opacity: .55; animation: turn 240s linear infinite; }
-.mosque .bigstar { top: 60%; }
-.bigstar.top { top: 30%; width: calc(26 * var(--vw)); height: calc(26 * var(--vw)); right: 0; }
+.bigstar { position: absolute; z-index: -1; right: calc(1 * var(--vw)); top: calc(50% - 13 * var(--vw)); width: calc(26 * var(--vw)); height: calc(26 * var(--vw)); opacity: .5; pointer-events: none; }
+.bigstar.top { top: 0; width: calc(20 * var(--vw)); height: calc(20 * var(--vw)); right: calc(2 * var(--vw)); }
 .feature .title, .feature p { max-width: calc(54 * var(--vw)); }
 
 /* ---- bottom bar (always on) ---- */
@@ -294,12 +293,22 @@ function nextPrayer(d) {
 
 // ---------- rendering ----------
 const $ = (id) => document.getElementById(id);
+// Hijri date from the Umm al-Qura calendar. Month names are our own: some TV browsers lack the Islamic month names and print Gregorian ones ("May").
+const HIJRI_MONTHS = ["Muharram", "Safar", "Rabi’ al-awwal", "Rabi’ al-thani", "Jumada al-awwal", "Jumada al-thani", "Rajab", "Sha’ban", "Ramadan", "Shawwal", "Dhu al-Qi’dah", "Dhu al-Hijjah"];
+function hijri(d) {
+  try {
+    const p = new Intl.DateTimeFormat("en-u-ca-islamic-umalqura-nu-latn", { timeZone: "Europe/London", day: "numeric", month: "numeric", year: "numeric" }).formatToParts(d);
+    const g = (t) => Number(p.find((x) => x.type === t).value), m = g("month");
+    return m >= 1 && m <= 12 ? `${g("day")} ${HIJRI_MONTHS[m - 1]} ${g("year")} AH` : "";
+  } catch { return ""; }
+}
 function tick() {
   const d = now(), p = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/London", hour: "numeric", minute: "2-digit", hour12: true }).formatToParts(d);
   const v = (t) => p.find((x) => x.type === t).value;
-  $("clock").innerHTML = `${v("hour")}:${v("minute")}<span class="ap">${v("dayPeriod").toLowerCase()}</span>`;
+  { const hr = Number(new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/London", hour: "2-digit", hourCycle: "h23" }).formatToParts(d).find((x) => x.type === "hour").value), mn = String(Math.floor(londonMinutes(d)) % 60).padStart(2, "0");
+    $("clock").innerHTML = `${hr % 12 || 12}:${mn}<span class="ap">${hr < 12 ? "am" : "pm"}</span>`; }
   $("date").textContent = d.toLocaleDateString("en-GB", { timeZone: "Europe/London", weekday: "long", day: "numeric", month: "long", year: "numeric" });
-  let h = ""; try { h = new Intl.DateTimeFormat("en-GB-u-ca-islamic-umalqura", { timeZone: "Europe/London", day: "numeric", month: "long", year: "numeric" }).format(d).replace(/ AH$/, "") + " AH"; } catch {}
+  const h = hijri(d);
   $("hijri").textContent = h;
 
   const n = nextPrayer(d);
